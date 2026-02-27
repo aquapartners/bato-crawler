@@ -13,9 +13,19 @@ jobs:
   crawl:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0   # Fetch full history for rebasing
+          fetch-depth: 0                # fetch full history for rebasing
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+      - name: Pull latest changes
+        run: git pull --rebase origin ${{ github.ref_name }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -36,4 +46,3 @@ jobs:
           commit_user_name: github-actions
           commit_user_email: github-actions@github.com
           commit_author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
-          pull_options: '--rebase'   # Integrate remote changes before pushing
