@@ -4,11 +4,18 @@ on:
     - cron: '0 2 * * *'  # daily at 2am UTC
   workflow_dispatch:       # allow manual run
 
+# Prevent multiple runs from conflicting
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   crawl:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # Fetch full history for rebasing
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -29,3 +36,4 @@ jobs:
           commit_user_name: github-actions
           commit_user_email: github-actions@github.com
           commit_author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          pull_options: '--rebase'   # Integrate remote changes before pushing
