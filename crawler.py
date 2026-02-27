@@ -40,12 +40,83 @@ def extract_amount(text):
             return None
     return None
 
+def extract_requirements(text):
+    """Parse raw bonus description into structured requirements."""
+    req = {
+        "min_deposit": None,
+        "direct_deposit": None,
+        "holding_days": None,
+        "transaction_count": None,
+        "min_balance": None,
+        "geographic_restrictions": [],
+        "expiration": None,
+        "notes": []
+    }
+
+    # Minimum deposit (e.g., "deposit $500", "$1,000 deposit")
+    match = re.search(r'(?:deposit|fund)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
+    if match:
+        req["min_deposit"] = int(match.group(1).replace(',', ''))
+
+    # Direct deposit amount (e.g., "direct deposit of $500", "$500 direct deposit")
+    match = re.search(r'(?:direct deposit|dd)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
+    if match:
+        req["direct_deposit"] = int(match.group(1).replace(',', ''))
+    else:
+        # Check for generic "direct deposit required" without amount
+        if re.search(r'direct deposit', text, re.IGNORECASE):
+            req["direct_deposit"] = True  # indicates required, amount unknown
+
+    # Holding period (e.g., "90 days", "hold for 3 months")
+    match = re.search(r'(\d+)\s*(?:day|days|month|months)', text, re.IGNORECASE)
+    if match:
+        num = int(match.group(1))
+        unit = match.group(2).lower()
+        if 'month' in unit:
+            req["holding_days"] = num * 30  # approximate
+        else:
+            req["holding_days"] = num
+
+    # Transaction count (e.g., "10 debit card transactions", "make 5 purchases")
+    match = re.search(r'(\d+)\s*(?:debit|purchases|transactions)', text, re.IGNORECASE)
+    if match:
+        req["transaction_count"] = int(match.group(1))
+
+    # Minimum balance (e.g., "maintain $1,500 balance")
+    match = re.search(r'(?:maintain|keep|balance)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
+    if match:
+        req["min_balance"] = int(match.group(1).replace(',', ''))
+
+    # Geographic restrictions (states, counties, etc.)
+    # Look for state abbreviations or patterns like "in CA, NV"
+    state_abbr = r'\b(AK|AL|AR|AZ|CA|CO|CT|DC|DE|FL|GA|HI|IA|ID|IL|IN|KS|KY|LA|MA|MD|ME|MI|MN|MO|MS|MT|NC|ND|NE|NH|NJ|NM|NV|NY|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VA|VT|WA|WI|WV|WY)\b'
+    match = re.findall(state_abbr, text)
+    if match:
+        req["geographic_restrictions"] = list(set(match))  # unique states
+
+    # Expiration date – common patterns like "offer ends 12/31/26" or "expires 2026-12-31"
+    date_match = re.search(r'(?:offer ends?|expires?|valid through)[:\s]*(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}|\d{4}[/\-]\d{1,2}[/\-]\d{1,2})', text, re.IGNORECASE)
+    if date_match:
+        req["expiration"] = date_match.group(1)
+
+    # Additional notes – capture anything that didn't fit
+    if "in branch" in text.lower():
+        req["notes"].append("in branch only")
+    if "no direct deposit" in text.lower():
+        req["notes"].append("no direct deposit required")
+    if "referral" in text.lower():
+        req["notes"].append("referral bonus")
+
+    return req
+
 def parse_common_bonus(text, source_url, category):
-    """Fallback parser for simple description lines."""
+    """Parse a single bonus line into structured data with requirements."""
     bank_match = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s+\d|[\$:])', text)
     bank = bank_match.group(1).strip() if bank_match else "Unknown"
+    bank = re.sub(r'[\.\:]+$', '', bank).strip()
     amount = extract_amount(text)
-    # Guess account type from keywords
+
+    # Guess account type
     atype = "unknown"
     low = text.lower()
     if any(k in low for k in ['checking', 'check']):
@@ -58,6 +129,10 @@ def parse_common_bonus(text, source_url, category):
         atype = "referral"
     elif any(k in low for k in ['crypto', 'bitcoin']):
         atype = "crypto"
+
+    # Extract requirements
+    req = extract_requirements(text)
+
     return {
         "bank": bank,
         "bonus_amount": amount,
@@ -65,7 +140,8 @@ def parse_common_bonus(text, source_url, category):
         "raw_text": text,
         "category": category,
         "source": source_url,
-        "scraped_at": datetime.utcnow().isoformat()
+        "scraped_at": datetime.utcnow().isoformat(),
+        **req  # include all requirement fields at the top level
     }
 
 # ======================== SOURCES PER CATEGORY ========================
