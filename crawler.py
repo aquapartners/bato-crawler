@@ -3,8 +3,13 @@ from bs4 import BeautifulSoup
 import json
 import re
 import time
+import asyncio  # <-- new
 from datetime import datetime
 from urllib.parse import urlparse
+
+# ======================== NEW IMPORTS FOR CRAWL4AI ========================
+from crawl4ai import AsyncWebCrawler
+from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, CacheMode
 
 # ======================== CONFIGURATION ========================
 DELAY = 2  # seconds between requests (be polite)
@@ -14,7 +19,33 @@ USER_AGENTS = [
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 ]
 
-# ======================== HELPER FUNCTIONS ========================
+# ======================== ASYNC FETCH HELPERS ========================
+async def fetch_with_crawl4ai(url):
+    """Fetch a page using crawl4ai (handles JavaScript)."""
+    browser_config = BrowserConfig(verbose=False, headless=True)
+    run_config = CrawlerRunConfig(
+        word_count_threshold=10,
+        process_iframes=True,
+        cache_mode=CacheMode.DISABLED
+    )
+    async with AsyncWebCrawler(config=browser_config) as crawler:
+        result = await crawler.arun(url=url, config=run_config)
+        if result.success:
+            return result.html
+        else:
+            print(f"crawl4ai error for {url}: {result.error_message}")
+            return None
+
+def fetch_dynamic(url):
+    """Synchronous wrapper for async fetch_with_crawl4ai."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(fetch_with_crawl4ai(url))
+    finally:
+        loop.close()
+
+# ======================== REGULAR FETCH ========================
 def fetch_url(url):
     """Fetch URL with retry and rotating user agent."""
     headers = {'User-Agent': USER_AGENTS[hash(url) % len(USER_AGENTS)]}
@@ -88,11 +119,10 @@ def extract_requirements(text):
         req["min_balance"] = int(match.group(1).replace(',', ''))
 
     # Geographic restrictions (states, counties, etc.)
-    # Look for state abbreviations or patterns like "in CA, NV"
     state_abbr = r'\b(AK|AL|AR|AZ|CA|CO|CT|DC|DE|FL|GA|HI|IA|ID|IL|IN|KS|KY|LA|MA|MD|ME|MI|MN|MO|MS|MT|NC|ND|NE|NH|NJ|NM|NV|NY|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VA|VT|WA|WI|WV|WY)\b'
     match = re.findall(state_abbr, text)
     if match:
-        req["geographic_restrictions"] = list(set(match))  # unique states
+        req["geographic_restrictions"] = list(set(match))
 
     # Expiration date – common patterns like "offer ends 12/31/26" or "expires 2026-12-31"
     date_match = re.search(r'(?:offer ends?|expires?|valid through)[:\s]*(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}|\d{4}[/\-]\d{1,2}[/\-]\d{1,2})', text, re.IGNORECASE)
@@ -130,7 +160,6 @@ def parse_common_bonus(text, source_url, category):
     elif any(k in low for k in ['crypto', 'bitcoin']):
         atype = "crypto"
 
-    # Extract requirements
     req = extract_requirements(text)
 
     return {
@@ -141,7 +170,7 @@ def parse_common_bonus(text, source_url, category):
         "category": category,
         "source": source_url,
         "scraped_at": datetime.utcnow().isoformat(),
-        **req  # include all requirement fields at the top level
+        **req
     }
 
 # ======================== SOURCES PER CATEGORY ========================
@@ -158,12 +187,14 @@ SOURCES = {
         {
             "name": "Coinbase",
             "url": "https://www.coinbase.com/join",
-            "parser": "coinbase"
+            "parser": "coinbase",
+            "dynamic": True   # <-- mark as dynamic
         },
         {
             "name": "Binance",
             "url": "https://www.binance.com/en/activity",
-            "parser": "binance"
+            "parser": "binance",
+            "dynamic": True    # you can add this later if needed
         },
         # Add more crypto sources
     ],
@@ -231,7 +262,6 @@ def parse_doc_bank(html, source_url):
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
 
-    # Find all <li> tags anywhere on the page
     all_lis = soup.find_all('li')
     print(f"  Found {len(all_lis)} total <li> tags on page")
 
@@ -240,7 +270,6 @@ def parse_doc_bank(html, source_url):
         if not text or '$' not in text:
             continue
 
-        # Use the common parser to extract fields – catch exceptions
         try:
             bonus = parse_common_bonus(text, source_url, "bank")
             if bonus['bonus_amount'] is not None:
@@ -255,19 +284,18 @@ def parse_doc_bank(html, source_url):
     return bonuses
 
 def parse_coinbase(html, source_url):
-    """Parse Coinbase join page (example)."""
-    # This is a placeholder – real implementation would inspect the page.
+    """Parse Coinbase join page – adjust selectors after inspecting the site."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
-    # Example: look for promo sections
-    for promo in soup.select('.promo-card'):
-        text = promo.get_text()
+    # Look for promo sections – you MUST replace these selectors with the actual ones from Coinbase
+    for card in soup.select('.promo-card, .join-rewards, [data-testid="promo"]'):
+        text = card.get_text()
         if '$' in text:
             bonuses.append(parse_common_bonus(text, source_url, "crypto"))
     return bonuses
 
 def parse_binance(html, source_url):
-    # Placeholder
+    # Placeholder – implement when needed
     return []
 
 def parse_robinhood(html, source_url):
@@ -291,13 +319,11 @@ def parse_swagbucks(html, source_url):
     return []
 
 def parse_mse(html, source_url):
-    """Parse MoneySavingExpert bank switching page."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
     for li in soup.select('li'):
         text = li.get_text()
         if 'switch' in text.lower() and '£' in text:
-            # Convert £ to USD roughly (optional)
             bonuses.append(parse_common_bonus(text, source_url, "uk_switch"))
     return bonuses
 
@@ -330,15 +356,23 @@ def run_crawler():
         for source in sources:
             total_sources += 1
             print(f"Scraping {source['name']} ({category})...")
-            html = fetch_url(source['url'])
+
+            # Choose fetch method based on 'dynamic' flag
+            if source.get('dynamic', False):
+                html = fetch_dynamic(source['url'])
+            else:
+                html = fetch_url(source['url'])
+
             if html is None:
                 failed += 1
                 continue
+
             parser = PARSERS.get(source['parser'])
             if not parser:
                 print(f"  No parser for {source['parser']}")
                 failed += 1
                 continue
+
             try:
                 bonuses = parser(html, source['url'])
                 all_bonuses.extend(bonuses)
@@ -347,9 +381,10 @@ def run_crawler():
             except Exception as e:
                 print(f"  Error parsing {source['name']}: {e}")
                 failed += 1
-            time.sleep(DELAY)  # be polite
 
-    # Deduplicate (by raw_text + bank + amount)
+            time.sleep(DELAY)
+
+    # Deduplicate
     seen = set()
     unique = []
     for b in all_bonuses:
@@ -358,7 +393,6 @@ def run_crawler():
             seen.add(key)
             unique.append(b)
 
-    # Prepare final output
     output = {
         "lastUpdated": datetime.utcnow().isoformat(),
         "stats": {
@@ -370,7 +404,6 @@ def run_crawler():
         "bonuses": unique
     }
 
-    # Save to file
     with open('bonuses.json', 'w') as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
 
