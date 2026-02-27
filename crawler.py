@@ -27,10 +27,17 @@ def fetch_url(url):
         return None
 
 def extract_amount(text):
-    """Extract first dollar amount from text (returns int or None)."""
+    """Extract first dollar amount from text (returns float or int or None)."""
     match = re.search(r'\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text)
     if match:
-        return int(match.group(1).replace(',', ''))
+        num_str = match.group(1).replace(',', '')
+        try:
+            if '.' in num_str:
+                return float(num_str)
+            else:
+                return int(num_str)
+        except ValueError:
+            return None
     return None
 
 def parse_common_bonus(text, source_url, category):
@@ -157,13 +164,16 @@ def parse_doc_bank(html, source_url):
         if not text or '$' not in text:
             continue
 
-        # Use the common parser to extract fields
-        bonus = parse_common_bonus(text, source_url, "bank")
-        if bonus['bonus_amount'] is not None:
-            bonuses.append(bonus)
-        else:
-            # Debug: show lines with $ but no amount
-            print(f"    Skipping (no amount): {text[:80]}...")
+        # Use the common parser to extract fields – catch exceptions
+        try:
+            bonus = parse_common_bonus(text, source_url, "bank")
+            if bonus['bonus_amount'] is not None:
+                bonuses.append(bonus)
+            else:
+                print(f"    Skipping (no amount): {text[:80]}...")
+        except Exception as e:
+            print(f"    Error parsing line: {text[:80]}... - {e}")
+            continue
 
     print(f"  Extracted {len(bonuses)} bonuses from Doctor of Credit")
     return bonuses
