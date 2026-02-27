@@ -1,3 +1,5 @@
 requests
 beautifulsoup4
 lxml
+crawl4ai>=0.6.3
+playwright>=1.40.0
