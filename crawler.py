@@ -144,16 +144,65 @@ SOURCES = {
 
 # ======================== PARSERS FOR EACH SOURCE ========================
 def parse_doc_bank(html, source_url):
-    """Parse Doctor of Credit bank bonuses page."""
+    """Parse Doctor of Credit bank bonuses page using improved selectors."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
-    for article in soup.select('article'):
-        title = article.select_one('.entry-title')
-        if title and 'bank' in title.text.lower():
-            for li in article.select('li'):
-                text = li.get_text(strip=True)
-                if text and '$' in text:
-                    bonuses.append(parse_common_bonus(text, source_url, "bank"))
+
+    # Find the main content div (usually entry-content)
+    content = soup.find('div', class_='entry-content')
+    if not content:
+        print("  Could not find entry-content, falling back to article method")
+        # Fallback to old method
+        for article in soup.select('article'):
+            title = article.select_one('.entry-title')
+            if title and 'bank' in title.text.lower():
+                for li in article.select('li'):
+                    text = li.get_text(strip=True)
+                    if text and '$' in text:
+                        bonuses.append(parse_common_bonus(text, source_url, "bank"))
+        return bonuses
+
+    # Look for list items that contain dollar amounts
+    for li in content.find_all('li'):
+        text = li.get_text(strip=True)
+        if not text or '$' not in text:
+            continue
+        # Skip section headers (e.g., "1 Best Checking Account Bonuses")
+        if re.match(r'^\d+\s+[A-Za-z]', text) and 'best' in text.lower():
+            continue
+
+        # Extract bank name
+        bank_match = re.match(r'^([A-Za-z0-9\s\.\&\-]+?)(?:\s+\d|[\$:])', text)
+        bank = bank_match.group(1).strip() if bank_match else "Unknown"
+        # Clean up common suffixes
+        bank = re.sub(r'[\.\:]+$', '', bank).strip()
+
+        # Extract amount
+        amount = extract_amount(text)
+
+        # Determine account type
+        atype = "unknown"
+        low = text.lower()
+        if any(k in low for k in ['checking', 'check']):
+            atype = "checking"
+        elif any(k in low for k in ['savings', 'save']):
+            atype = "savings"
+        elif any(k in low for k in ['business', 'biz']):
+            atype = "business"
+        elif any(k in low for k in ['referral', 'refer']):
+            atype = "referral"
+
+        bonuses.append({
+            "bank": bank,
+            "bonus_amount": amount,
+            "account_type": atype,
+            "raw_text": text,
+            "category": "bank",
+            "source": source_url,
+            "scraped_at": datetime.utcnow().isoformat()
+        })
+
+    print(f"  Doctor of Credit: found {len(bonuses)} bonuses using entry-content")
     return bonuses
 
 def parse_coinbase(html, source_url):
