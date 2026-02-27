@@ -144,23 +144,44 @@ SOURCES = {
 
 # ======================== PARSERS FOR EACH SOURCE ========================
 def parse_doc_bank(html, source_url):
-    """Parse Doctor of Credit bank bonuses page using improved selectors."""
+    """Parse Doctor of Credit bank bonuses page with debugging."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
 
-    # Find the main content div (usually entry-content)
+    # Print a snippet of the HTML to see what we're dealing with
+    print("  Page title:", soup.title.string if soup.title else "No title")
+    print("  First 1000 chars of HTML:", html[:1000])
+
+    # Try multiple strategies to find the content
     content = soup.find('div', class_='entry-content')
     if not content:
-        print("  Could not find entry-content, falling back to article method")
-        # Fallback to old method
-        for article in soup.select('article'):
-            title = article.select_one('.entry-title')
-            if title and 'bank' in title.text.lower():
-                for li in article.select('li'):
-                    text = li.get_text(strip=True)
-                    if text and '$' in text:
-                        bonuses.append(parse_common_bonus(text, source_url, "bank"))
-        return bonuses
+        print("  No entry-content div found")
+        # Try article body
+        content = soup.find('article')
+        if not content:
+            print("  No article found either")
+            return bonuses
+        else:
+            print("  Using article tag")
+
+    # Count all list items in content
+    all_lis = content.find_all('li')
+    print(f"  Found {len(all_lis)} list items in content")
+
+    # Process each list item
+    for li in all_lis:
+        text = li.get_text(strip=True)
+        if not text:
+            continue
+        print(f"  List item text: {text[:100]}")  # print first 100 chars
+        if '$' in text:
+            # Extract using common parser
+            bonuses.append(parse_common_bonus(text, source_url, "bank"))
+        else:
+            print("    No $ found")
+
+    print(f"  Doctor of Credit: returning {len(bonuses)} bonuses")
+    return bonuses
 
     # Look for list items that contain dollar amounts
     for li in content.find_all('li'):
