@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2026-02-27T12:53:43.189051",
+  "lastUpdated": "2026-02-27T13:01:01.971672",
   "stats": {
     "totalSources": 10,
-    "successful": 4,
-    "failed": 6,
+    "successful": 5,
+    "failed": 5,
     "totalBonuses": 0
   },
   "bonuses": []
