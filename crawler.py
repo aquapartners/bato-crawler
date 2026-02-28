@@ -3,11 +3,11 @@ from bs4 import BeautifulSoup
 import json
 import re
 import time
-import asyncio  # <-- new
+import asyncio
 from datetime import datetime
 from urllib.parse import urlparse
 
-# ======================== NEW IMPORTS FOR CRAWL4AI ========================
+# ======================== CRAWL4AI IMPORTS ========================
 from crawl4ai import AsyncWebCrawler
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, CacheMode
 
@@ -57,6 +57,7 @@ def fetch_url(url):
         print(f"Error fetching {url}: {e}")
         return None
 
+# ======================== EXTRACTION HELPERS ========================
 def extract_amount(text):
     """Extract first dollar amount from text (returns float or int or None)."""
     match = re.search(r'\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text)
@@ -70,6 +71,11 @@ def extract_amount(text):
         except ValueError:
             return None
     return None
+
+def extract_amount_multi_currency(text):
+    """Extract amount with currency symbol (USD, EUR, GBP, etc.)"""
+    # This is a placeholder – you can expand for other currencies
+    return extract_amount(text)
 
 def extract_requirements(text):
     """Parse raw bonus description into structured requirements."""
@@ -94,9 +100,8 @@ def extract_requirements(text):
     if match:
         req["direct_deposit"] = int(match.group(1).replace(',', ''))
     else:
-        # Check for generic "direct deposit required" without amount
         if re.search(r'direct deposit', text, re.IGNORECASE):
-            req["direct_deposit"] = True  # indicates required, amount unknown
+            req["direct_deposit"] = True
 
     # Holding period (e.g., "90 days", "hold for 3 months")
     match = re.search(r'(\d+)\s*(?:day|days|month|months)', text, re.IGNORECASE)
@@ -104,11 +109,11 @@ def extract_requirements(text):
         num = int(match.group(1))
         unit = match.group(2).lower()
         if 'month' in unit:
-            req["holding_days"] = num * 30  # approximate
+            req["holding_days"] = num * 30
         else:
             req["holding_days"] = num
 
-    # Transaction count (e.g., "10 debit card transactions", "make 5 purchases")
+    # Transaction count (e.g., "10 debit card transactions")
     match = re.search(r'(\d+)\s*(?:debit|purchases|transactions)', text, re.IGNORECASE)
     if match:
         req["transaction_count"] = int(match.group(1))
@@ -118,18 +123,18 @@ def extract_requirements(text):
     if match:
         req["min_balance"] = int(match.group(1).replace(',', ''))
 
-    # Geographic restrictions (states, counties, etc.)
+    # Geographic restrictions – US states
     state_abbr = r'\b(AK|AL|AR|AZ|CA|CO|CT|DC|DE|FL|GA|HI|IA|ID|IL|IN|KS|KY|LA|MA|MD|ME|MI|MN|MO|MS|MT|NC|ND|NE|NH|NJ|NM|NV|NY|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VA|VT|WA|WI|WV|WY)\b'
     match = re.findall(state_abbr, text)
     if match:
         req["geographic_restrictions"] = list(set(match))
 
-    # Expiration date – common patterns like "offer ends 12/31/26" or "expires 2026-12-31"
+    # Expiration date
     date_match = re.search(r'(?:offer ends?|expires?|valid through)[:\s]*(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}|\d{4}[/\-]\d{1,2}[/\-]\d{1,2})', text, re.IGNORECASE)
     if date_match:
         req["expiration"] = date_match.group(1)
 
-    # Additional notes – capture anything that didn't fit
+    # Additional notes
     if "in branch" in text.lower():
         req["notes"].append("in branch only")
     if "no direct deposit" in text.lower():
@@ -140,13 +145,13 @@ def extract_requirements(text):
     return req
 
 def parse_common_bonus(text, source_url, category):
-    """Parse a single bonus line into structured data with requirements."""
+    """Parse a single bonus line into structured data."""
     bank_match = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s+\d|[\$:])', text)
     bank = bank_match.group(1).strip() if bank_match else "Unknown"
     bank = re.sub(r'[\.\:]+$', '', bank).strip()
     amount = extract_amount(text)
 
-    # Guess account type
+    # Guess account type based on keywords
     atype = "unknown"
     low = text.lower()
     if any(k in low for k in ['checking', 'check']):
@@ -159,6 +164,10 @@ def parse_common_bonus(text, source_url, category):
         atype = "referral"
     elif any(k in low for k in ['crypto', 'bitcoin']):
         atype = "crypto"
+    elif any(k in low for k in ['miles', 'points']):
+        atype = "travel_miles"
+    elif any(k in low for k in ['cashback', 'cash back']):
+        atype = "cashback"
 
     req = extract_requirements(text)
 
@@ -174,29 +183,44 @@ def parse_common_bonus(text, source_url, category):
     }
 
 # ======================== SOURCES PER CATEGORY ========================
+# Add real sources for each industry. You can add many more later.
 SOURCES = {
     "bank": [
         {
-            "name": "Doctor of Credit",
+            "name": "Doctor of Credit (US Banks)",
             "url": "https://www.doctorofcredit.com/best-bank-account-bonuses/",
             "parser": "doc_bank"
         },
-        # Add more bank sources here
+        {
+            "name": "MoneySavingExpert (UK Bank Switching)",
+            "url": "https://www.moneysavingexpert.com/banking/compare-best-bank-accounts/",
+            "parser": "mse_uk_switch"
+        },
+        {
+            "name": "NerdWallet (Bank Bonuses)",
+            "url": "https://www.nerdwallet.com/banking/best-bank-bonuses",
+            "parser": "nerdwallet_bank"
+        }
     ],
     "crypto": [
         {
             "name": "Coinbase",
             "url": "https://www.coinbase.com/join",
             "parser": "coinbase",
-            "dynamic": True   # <-- mark as dynamic
+            "dynamic": True
         },
         {
             "name": "Binance",
             "url": "https://www.binance.com/en/activity",
             "parser": "binance",
-            "dynamic": True    # you can add this later if needed
+            "dynamic": True
         },
-        # Add more crypto sources
+        {
+            "name": "Crypto.com",
+            "url": "https://crypto.com/exchange",
+            "parser": "crypto_com",
+            "dynamic": True
+        }
     ],
     "investment": [
         {
@@ -204,7 +228,11 @@ SOURCES = {
             "url": "https://robinhood.com/",
             "parser": "robinhood"
         },
-        # Add more
+        {
+            "name": "Webull",
+            "url": "https://www.webull.com/activity",
+            "parser": "webull"
+        }
     ],
     "referral": [
         {
@@ -212,7 +240,16 @@ SOURCES = {
             "url": "https://airbnb.com/invite",
             "parser": "airbnb"
         },
-        # Add more
+        {
+            "name": "Uber",
+            "url": "https://uber.com/invite",
+            "parser": "uber"
+        },
+        {
+            "name": "DoorDash",
+            "url": "https://www.doordash.com/referral",
+            "parser": "doordash"
+        }
     ],
     "retail": [
         {
@@ -220,7 +257,11 @@ SOURCES = {
             "url": "https://www.rakuten.com/welcome",
             "parser": "rakuten"
         },
-        # Add more
+        {
+            "name": "Honey (PayPal)",
+            "url": "https://www.joinhoney.com/",
+            "parser": "honey"
+        }
     ],
     "travel": [
         {
@@ -228,7 +269,11 @@ SOURCES = {
             "url": "https://www.delta.com/skymiles-offers",
             "parser": "delta"
         },
-        # Add more
+        {
+            "name": "Marriott Bonvoy",
+            "url": "https://www.marriott.com/loyaly",
+            "parser": "marriott"
+        }
     ],
     "survey": [
         {
@@ -236,96 +281,162 @@ SOURCES = {
             "url": "https://www.swagbucks.com/offers",
             "parser": "swagbucks"
         },
-        # Add more
-    ],
-    "uk_switch": [
         {
-            "name": "MoneySavingExpert",
+            "name": "Survey Junkie",
+            "url": "https://www.surveyjunkie.com/",
+            "parser": "survey_junkie"
+        }
+    ],
+    "uk_switch": [  # kept for backward compatibility
+        {
+            "name": "MoneySavingExpert (UK Bank Switch)",
             "url": "https://www.moneysavingexpert.com/banking/compare-best-bank-accounts/",
-            "parser": "mse"
-        },
-        # Add more
+            "parser": "mse_uk_switch"
+        }
     ],
     "wealth": [
         {
             "name": "Citi Private Bank",
             "url": "https://www.privatebank.citibank.com/offers",
             "parser": "citi_private"
-        },
-        # Add more
-    ],
+        }
+    ]
 }
 
-# ======================== PARSERS FOR EACH SOURCE ========================
+# ======================== PARSERS ========================
+# Each parser takes (html, source_url) and returns a list of bonus dicts.
+
 def parse_doc_bank(html, source_url):
-    """Parse Doctor of Credit by scanning all list items for dollar amounts."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
-
-    all_lis = soup.find_all('li')
-    print(f"  Found {len(all_lis)} total <li> tags on page")
-
-    for li in all_lis:
+    # Look for list items with $ in the main content
+    for li in soup.select('.entry-content li'):
         text = li.get_text(strip=True)
-        if not text or '$' not in text:
-            continue
-
-        try:
-            bonus = parse_common_bonus(text, source_url, "bank")
-            if bonus['bonus_amount'] is not None:
-                bonuses.append(bonus)
-            else:
-                print(f"    Skipping (no amount): {text[:80]}...")
-        except Exception as e:
-            print(f"    Error parsing line: {text[:80]}... - {e}")
-            continue
-
-    print(f"  Extracted {len(bonuses)} bonuses from Doctor of Credit")
-    return bonuses
-
-def parse_coinbase(html, source_url):
-    """Parse Coinbase join page – adjust selectors after inspecting the site."""
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    # Look for promo sections – you MUST replace these selectors with the actual ones from Coinbase
-    for card in soup.select('.promo-card, .join-rewards, [data-testid="promo"]'):
-        text = card.get_text()
         if '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "crypto"))
+            bonus = parse_common_bonus(text, source_url, "bank")
+            if bonus['bonus_amount']:
+                bonuses.append(bonus)
     return bonuses
 
-def parse_binance(html, source_url):
-    # Placeholder – implement when needed
-    return []
-
-def parse_robinhood(html, source_url):
-    # Placeholder
-    return []
-
-def parse_airbnb(html, source_url):
-    # Placeholder
-    return []
-
-def parse_rakuten(html, source_url):
-    # Placeholder
-    return []
-
-def parse_delta(html, source_url):
-    # Placeholder
-    return []
-
-def parse_swagbucks(html, source_url):
-    # Placeholder
-    return []
-
-def parse_mse(html, source_url):
+def parse_mse_uk_switch(html, source_url):
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
     for li in soup.select('li'):
         text = li.get_text()
         if 'switch' in text.lower() and '£' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "uk_switch"))
+            bonus = parse_common_bonus(text, source_url, "uk_switch")
+            if bonus['bonus_amount']:
+                bonuses.append(bonus)
     return bonuses
+
+def parse_nerdwallet_bank(html, source_url):
+    # Example parser – adjust selectors based on actual site structure
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    for card in soup.select('.bank-offer-card'):
+        text = card.get_text()
+        if '$' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "bank"))
+    return bonuses
+
+def parse_coinbase(html, source_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    # Coinbase often uses data-testid or specific classes – inspect the site
+    for promo in soup.select('[data-testid="promo-card"], .promo-card, .join-rewards'):
+        text = promo.get_text()
+        if '$' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "crypto"))
+    return bonuses
+
+def parse_binance(html, source_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    # Binance promotions – inspect to find correct selectors
+    for promo in soup.select('.activity-card, .promotion-item'):
+        text = promo.get_text()
+        if '$' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "crypto"))
+    return bonuses
+
+def parse_crypto_com(html, source_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    for promo in soup.select('.promo-card'):
+        text = promo.get_text()
+        if '$' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "crypto"))
+    return bonuses
+
+def parse_robinhood(html, source_url):
+    # Placeholder – implement after inspecting robinhood.com
+    return []
+
+def parse_webull(html, source_url):
+    # Placeholder
+    return []
+
+def parse_airbnb(html, source_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    for link in soup.select('a[href*="invite"]'):
+        text = link.get_text()
+        if '$' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "referral"))
+    return bonuses
+
+def parse_uber(html, source_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    # Look for referral promotion text
+    for div in soup.select('div'):
+        text = div.get_text()
+        if 'refer' in text.lower() and '$' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "referral"))
+    return bonuses
+
+def parse_doordash(html, source_url):
+    # Placeholder
+    return []
+
+def parse_rakuten(html, source_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    for promo in soup.select('.promo-card'):
+        text = promo.get_text()
+        if '$' in text or '%' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "retail"))
+    return bonuses
+
+def parse_honey(html, source_url):
+    # Placeholder
+    return []
+
+def parse_delta(html, source_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    for card in soup.select('.offer-card'):
+        text = card.get_text()
+        if 'miles' in text.lower() or '$' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "travel"))
+    return bonuses
+
+def parse_marriott(html, source_url):
+    # Placeholder
+    return []
+
+def parse_swagbucks(html, source_url):
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    for offer in soup.select('.offer-card'):
+        text = offer.get_text()
+        if '$' in text:
+            bonuses.append(parse_common_bonus(text, source_url, "survey"))
+    return bonuses
+
+def parse_survey_junkie(html, source_url):
+    # Placeholder
+    return []
 
 def parse_citi_private(html, source_url):
     # Placeholder
@@ -334,14 +445,22 @@ def parse_citi_private(html, source_url):
 # Map parser names to functions
 PARSERS = {
     "doc_bank": parse_doc_bank,
+    "mse_uk_switch": parse_mse_uk_switch,
+    "nerdwallet_bank": parse_nerdwallet_bank,
     "coinbase": parse_coinbase,
     "binance": parse_binance,
+    "crypto_com": parse_crypto_com,
     "robinhood": parse_robinhood,
+    "webull": parse_webull,
     "airbnb": parse_airbnb,
+    "uber": parse_uber,
+    "doordash": parse_doordash,
     "rakuten": parse_rakuten,
+    "honey": parse_honey,
     "delta": parse_delta,
+    "marriott": parse_marriott,
     "swagbucks": parse_swagbucks,
-    "mse": parse_mse,
+    "survey_junkie": parse_survey_junkie,
     "citi_private": parse_citi_private,
 }
 
