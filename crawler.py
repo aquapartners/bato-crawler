@@ -146,9 +146,15 @@ def extract_requirements(text):
 
 def parse_common_bonus(text, source_url, category):
     """Parse a single bonus line into structured data."""
+    # Try to extract bank name more flexibly
     bank_match = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s+\d|[\$:])', text)
     bank = bank_match.group(1).strip() if bank_match else "Unknown"
     bank = re.sub(r'[\.\:]+$', '', bank).strip()
+    if not bank or bank == "Unknown":
+        # fallback: first word(s) until a digit or $ or colon
+        fallback = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s|$)', text)
+        if fallback:
+            bank = fallback.group(1).strip()
     amount = extract_amount(text)
 
     # Guess account type based on keywords
@@ -183,7 +189,7 @@ def parse_common_bonus(text, source_url, category):
     }
 
 # ======================== SOURCES PER CATEGORY ========================
-# Add real sources for each industry. You can add many more later.
+# For now, focus on bank sources. Others can be added later.
 SOURCES = {
     "bank": [
         {
@@ -191,255 +197,113 @@ SOURCES = {
             "url": "https://www.doctorofcredit.com/best-bank-account-bonuses/",
             "parser": "doc_bank"
         },
-        {
-            "name": "MoneySavingExpert (UK Bank Switching)",
-            "url": "https://www.moneysavingexpert.com/banking/compare-best-bank-accounts/",
-            "parser": "mse_uk_switch"
-        },
-        {
-            "name": "NerdWallet (Bank Bonuses)",
-            "url": "https://www.nerdwallet.com/banking/best-bank-bonuses",
-            "parser": "nerdwallet_bank"
-        }
+        # Comment out other sources temporarily to isolate
+        # {
+        #     "name": "MoneySavingExpert (UK Bank Switching)",
+        #     "url": "https://www.moneysavingexpert.com/banking/compare-best-bank-accounts/",
+        #     "parser": "mse_uk_switch"
+        # },
+        # {
+        #     "name": "NerdWallet (Bank Bonuses)",
+        #     "url": "https://www.nerdwallet.com/banking/best-bank-bonuses",
+        #     "parser": "nerdwallet_bank"
+        # }
     ],
-    "crypto": [
-        {
-            "name": "Coinbase",
-            "url": "https://www.coinbase.com/join",
-            "parser": "coinbase",
-            "dynamic": True
-        },
-        {
-            "name": "Binance",
-            "url": "https://www.binance.com/en/activity",
-            "parser": "binance",
-            "dynamic": True
-        },
-        {
-            "name": "Crypto.com",
-            "url": "https://crypto.com/exchange",
-            "parser": "crypto_com",
-            "dynamic": True
-        }
-    ],
-    "investment": [
-        {
-            "name": "Robinhood",
-            "url": "https://robinhood.com/",
-            "parser": "robinhood"
-        },
-        {
-            "name": "Webull",
-            "url": "https://www.webull.com/activity",
-            "parser": "webull"
-        }
-    ],
-    "referral": [
-        {
-            "name": "Airbnb",
-            "url": "https://airbnb.com/invite",
-            "parser": "airbnb"
-        },
-        {
-            "name": "Uber",
-            "url": "https://uber.com/invite",
-            "parser": "uber"
-        },
-        {
-            "name": "DoorDash",
-            "url": "https://www.doordash.com/referral",
-            "parser": "doordash"
-        }
-    ],
-    "retail": [
-        {
-            "name": "Rakuten",
-            "url": "https://www.rakuten.com/welcome",
-            "parser": "rakuten"
-        },
-        {
-            "name": "Honey (PayPal)",
-            "url": "https://www.joinhoney.com/",
-            "parser": "honey"
-        }
-    ],
-    "travel": [
-        {
-            "name": "Delta SkyMiles",
-            "url": "https://www.delta.com/skymiles-offers",
-            "parser": "delta"
-        },
-        {
-            "name": "Marriott Bonvoy",
-            "url": "https://www.marriott.com/loyaly",
-            "parser": "marriott"
-        }
-    ],
-    "survey": [
-        {
-            "name": "Swagbucks",
-            "url": "https://www.swagbucks.com/offers",
-            "parser": "swagbucks"
-        },
-        {
-            "name": "Survey Junkie",
-            "url": "https://www.surveyjunkie.com/",
-            "parser": "survey_junkie"
-        }
-    ],
-    "uk_switch": [  # kept for backward compatibility
-        {
-            "name": "MoneySavingExpert (UK Bank Switch)",
-            "url": "https://www.moneysavingexpert.com/banking/compare-best-bank-accounts/",
-            "parser": "mse_uk_switch"
-        }
-    ],
-    "wealth": [
-        {
-            "name": "Citi Private Bank",
-            "url": "https://www.privatebank.citibank.com/offers",
-            "parser": "citi_private"
-        }
-    ]
+    # "crypto": [...],  # Commented out for now
+    # "investment": [...],
+    # "referral": [...],
+    # "retail": [...],
+    # "travel": [...],
+    # "survey": [...],
+    # "uk_switch": [...],
+    # "wealth": [...]
 }
 
 # ======================== PARSERS ========================
-# Each parser takes (html, source_url) and returns a list of bonus dicts.
 
 def parse_doc_bank(html, source_url):
+    """Parse Doctor of Credit by scanning all elements that contain $."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
-    # Look for list items with $ in the main content
-    for li in soup.select('.entry-content li'):
-        text = li.get_text(strip=True)
-        if '$' in text:
+    # Try to find the main content area
+    content = soup.find('div', class_='entry-content')
+    if not content:
+        # fallback to whole page
+        content = soup
+    # Look for any element (p, li, div) that might contain a bonus
+    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
+        text = elem.get_text(strip=True)
+        if not text:
+            continue
+        # Skip very short or very long texts (likely not a bonus line)
+        if len(text) < 10 or len(text) > 300:
+            continue
+        if '$' not in text:
+            continue
+        # Skip navigation or footer-like text
+        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
+            continue
+        # Try to parse
+        try:
             bonus = parse_common_bonus(text, source_url, "bank")
             if bonus['bonus_amount']:
                 bonuses.append(bonus)
+                print(f"    Extracted: {bonus['bank']} - ${bonus['bonus_amount']} from: {text[:50]}...")
+        except Exception as e:
+            print(f"    Error parsing: {text[:50]}... -> {e}")
+    print(f"  Found {len(bonuses)} bonuses from Doctor of Credit")
     return bonuses
 
+# Keep placeholder parsers for other sources (they can be empty for now)
 def parse_mse_uk_switch(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    for li in soup.select('li'):
-        text = li.get_text()
-        if 'switch' in text.lower() and '£' in text:
-            bonus = parse_common_bonus(text, source_url, "uk_switch")
-            if bonus['bonus_amount']:
-                bonuses.append(bonus)
-    return bonuses
+    return []
 
 def parse_nerdwallet_bank(html, source_url):
-    # Example parser – adjust selectors based on actual site structure
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    for card in soup.select('.bank-offer-card'):
-        text = card.get_text()
-        if '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "bank"))
-    return bonuses
+    return []
 
 def parse_coinbase(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    # Coinbase often uses data-testid or specific classes – inspect the site
-    for promo in soup.select('[data-testid="promo-card"], .promo-card, .join-rewards'):
-        text = promo.get_text()
-        if '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "crypto"))
-    return bonuses
+    return []
 
 def parse_binance(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    # Binance promotions – inspect to find correct selectors
-    for promo in soup.select('.activity-card, .promotion-item'):
-        text = promo.get_text()
-        if '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "crypto"))
-    return bonuses
+    return []
 
 def parse_crypto_com(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    for promo in soup.select('.promo-card'):
-        text = promo.get_text()
-        if '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "crypto"))
-    return bonuses
+    return []
 
 def parse_robinhood(html, source_url):
-    # Placeholder – implement after inspecting robinhood.com
     return []
 
 def parse_webull(html, source_url):
-    # Placeholder
     return []
 
 def parse_airbnb(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    for link in soup.select('a[href*="invite"]'):
-        text = link.get_text()
-        if '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "referral"))
-    return bonuses
+    return []
 
 def parse_uber(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    # Look for referral promotion text
-    for div in soup.select('div'):
-        text = div.get_text()
-        if 'refer' in text.lower() and '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "referral"))
-    return bonuses
+    return []
 
 def parse_doordash(html, source_url):
-    # Placeholder
     return []
 
 def parse_rakuten(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    for promo in soup.select('.promo-card'):
-        text = promo.get_text()
-        if '$' in text or '%' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "retail"))
-    return bonuses
+    return []
 
 def parse_honey(html, source_url):
-    # Placeholder
     return []
 
 def parse_delta(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    for card in soup.select('.offer-card'):
-        text = card.get_text()
-        if 'miles' in text.lower() or '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "travel"))
-    return bonuses
+    return []
 
 def parse_marriott(html, source_url):
-    # Placeholder
     return []
 
 def parse_swagbucks(html, source_url):
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    for offer in soup.select('.offer-card'):
-        text = offer.get_text()
-        if '$' in text:
-            bonuses.append(parse_common_bonus(text, source_url, "survey"))
-    return bonuses
+    return []
 
 def parse_survey_junkie(html, source_url):
-    # Placeholder
     return []
 
 def parse_citi_private(html, source_url):
-    # Placeholder
     return []
 
 # Map parser names to functions
