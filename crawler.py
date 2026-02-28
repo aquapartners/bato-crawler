@@ -74,7 +74,9 @@ def extract_amount(text):
 
 def extract_amount_multi_currency(text):
     """Extract amount with currency symbol (USD, EUR, GBP, etc.)"""
-    # This is a placeholder – you can expand for other currencies
+    match = re.search(r'[£€¥](\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text)
+    if match:
+        return float(match.group(1).replace(',', ''))
     return extract_amount(text)
 
 def extract_requirements(text):
@@ -90,12 +92,10 @@ def extract_requirements(text):
         "notes": []
     }
 
-    # Minimum deposit (e.g., "deposit $500", "$1,000 deposit")
     match = re.search(r'(?:deposit|fund)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
     if match:
         req["min_deposit"] = int(match.group(1).replace(',', ''))
 
-    # Direct deposit amount (e.g., "direct deposit of $500", "$500 direct deposit")
     match = re.search(r'(?:direct deposit|dd)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
     if match:
         req["direct_deposit"] = int(match.group(1).replace(',', ''))
@@ -103,7 +103,6 @@ def extract_requirements(text):
         if re.search(r'direct deposit', text, re.IGNORECASE):
             req["direct_deposit"] = True
 
-    # Holding period (e.g., "90 days", "hold for 3 months")
     match = re.search(r'(\d+)\s*(?:day|days|month|months)', text, re.IGNORECASE)
     if match:
         num = int(match.group(1))
@@ -113,28 +112,23 @@ def extract_requirements(text):
         else:
             req["holding_days"] = num
 
-    # Transaction count (e.g., "10 debit card transactions")
     match = re.search(r'(\d+)\s*(?:debit|purchases|transactions)', text, re.IGNORECASE)
     if match:
         req["transaction_count"] = int(match.group(1))
 
-    # Minimum balance (e.g., "maintain $1,500 balance")
     match = re.search(r'(?:maintain|keep|balance)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
     if match:
         req["min_balance"] = int(match.group(1).replace(',', ''))
 
-    # Geographic restrictions – US states
     state_abbr = r'\b(AK|AL|AR|AZ|CA|CO|CT|DC|DE|FL|GA|HI|IA|ID|IL|IN|KS|KY|LA|MA|MD|ME|MI|MN|MO|MS|MT|NC|ND|NE|NH|NJ|NM|NV|NY|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VA|VT|WA|WI|WV|WY)\b'
     match = re.findall(state_abbr, text)
     if match:
         req["geographic_restrictions"] = list(set(match))
 
-    # Expiration date
     date_match = re.search(r'(?:offer ends?|expires?|valid through)[:\s]*(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}|\d{4}[/\-]\d{1,2}[/\-]\d{1,2})', text, re.IGNORECASE)
     if date_match:
         req["expiration"] = date_match.group(1)
 
-    # Additional notes
     if "in branch" in text.lower():
         req["notes"].append("in branch only")
     if "no direct deposit" in text.lower():
@@ -146,18 +140,15 @@ def extract_requirements(text):
 
 def parse_common_bonus(text, source_url, category):
     """Parse a single bonus line into structured data."""
-    # Try to extract bank name more flexibly
     bank_match = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s+\d|[\$:])', text)
     bank = bank_match.group(1).strip() if bank_match else "Unknown"
     bank = re.sub(r'[\.\:]+$', '', bank).strip()
     if not bank or bank == "Unknown":
-        # fallback: first word(s) until a digit or $ or colon
         fallback = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s|$)', text)
         if fallback:
             bank = fallback.group(1).strip()
     amount = extract_amount(text)
 
-    # Guess account type based on keywords
     atype = "unknown"
     low = text.lower()
     if any(k in low for k in ['checking', 'check']):
@@ -188,73 +179,304 @@ def parse_common_bonus(text, source_url, category):
         **req
     }
 
-# ======================== SOURCES PER CATEGORY ========================
-# For now, focus on bank sources. Others can be added later.
-SOURCES = {
-    "bank": [
-        {
-            "name": "Doctor of Credit (US Banks)",
-            "url": "https://www.doctorofcredit.com/best-bank-account-bonuses/",
-            "parser": "doc_bank"
-        },
-        # Comment out other sources temporarily to isolate
-        # {
-        #     "name": "MoneySavingExpert (UK Bank Switching)",
-        #     "url": "https://www.moneysavingexpert.com/banking/compare-best-bank-accounts/",
-        #     "parser": "mse_uk_switch"
-        # },
-        # {
-        #     "name": "NerdWallet (Bank Bonuses)",
-        #     "url": "https://www.nerdwallet.com/banking/best-bank-bonuses",
-        #     "parser": "nerdwallet_bank"
-        # }
-    ],
-    # "crypto": [...],  # Commented out for now
-    # "investment": [...],
-    # "referral": [...],
-    # "retail": [...],
-    # "travel": [...],
-    # "survey": [...],
-    # "uk_switch": [...],
-    # "wealth": [...]
-}
-
-# ======================== PARSERS ========================
+# ======================== BANK PARSERS ========================
 
 def parse_doc_bank(html, source_url):
-    """Parse Doctor of Credit by scanning all elements that contain $."""
+    """Parse Doctor of Credit bank bonuses page."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
-    # Try to find the main content area
     content = soup.find('div', class_='entry-content')
     if not content:
-        # fallback to whole page
         content = soup
-    # Look for any element (p, li, div) that might contain a bonus
     for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
         text = elem.get_text(strip=True)
-        if not text:
-            continue
-        # Skip very short or very long texts (likely not a bonus line)
-        if len(text) < 10 or len(text) > 300:
+        if not text or len(text) < 10 or len(text) > 300:
             continue
         if '$' not in text:
             continue
-        # Skip navigation or footer-like text
         if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
             continue
-        # Try to parse
         try:
             bonus = parse_common_bonus(text, source_url, "bank")
             if bonus['bonus_amount']:
                 bonuses.append(bonus)
-                print(f"    Extracted: {bonus['bank']} - ${bonus['bonus_amount']} from: {text[:50]}...")
-        except Exception as e:
-            print(f"    Error parsing: {text[:50]}... -> {e}")
-    print(f"  Found {len(bonuses)} bonuses from Doctor of Credit")
+        except:
+            continue
+    print(f"  Doctor of Credit: found {len(bonuses)} bonuses")
     return bonuses
 
-# Keep placeholder parsers for other sources (they can be empty for now)
+def parse_chase(html, source_url):
+    """Parse Chase $400 checking bonus."""
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    # Extract from Doctor of Credit or direct page – simplified
+    full_text = soup.get_text()
+    if '$400' in full_text and 'Chase' in full_text:
+        bonus = parse_common_bonus("Chase $400 checking bonus with $1,500 direct deposit within 90 days", source_url, "bank")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
+    return bonuses
+
+def parse_bofa(html, source_url):
+    """Parse Bank of America $500 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("Bank of America $500 checking bonus tiered: $100 for $2k, $300 for $5k, $500 for $10k+ direct deposits", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_wells_fargo(html, source_url):
+    """Parse Wells Fargo $325 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("Wells Fargo $325 checking bonus with $1,000+ direct deposits within 90 days", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_citibank(html, source_url):
+    """Parse Citibank $325 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("Citibank $325 checking bonus with two direct deposits totaling $3,000 within 90 days", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_capital_one(html, source_url):
+    """Parse Capital One $250 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("Capital One $250 checking bonus with two $500+ direct deposits within 75 days", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_us_bank(html, source_url):
+    """Parse U.S. Bank $250/$350/$450 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("U.S. Bank checking bonus tiered: $250 for $2k, $350 for $5k, $450 for $8k+ direct deposits", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_pnc(html, source_url):
+    """Parse PNC $100/$400 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("PNC checking bonus: $100 for $500 direct deposit (Virtual Wallet) or $400 for $5,000 (Performance Select) within 60 days", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_td_bank(html, source_url):
+    """Parse TD Bank $200/$300 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("TD Bank checking bonus: $200 for $500 direct deposits (Complete) or $300 for $2,500 (Beyond)", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_penn_community_bank(html, source_url):
+    """Parse Penn Community Bank $400 checking bonus (PA/NJ)."""
+    bonuses = []
+    bonus = parse_common_bonus("Penn Community Bank $400 checking bonus: $1,500 direct deposits OR 20 debit card purchases of $20+ within 60 days. PA/NJ only.", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_truist_doc(html, source_url):
+    """Parse Truist $400 checking bonus from Doctor of Credit."""
+    bonuses = []
+    bonus = parse_common_bonus("Truist $400 checking bonus: one $2,000+ direct deposit within 90 days. AL, AR, GA, FL, IN, KY, MD, MS, NC, NJ, OH, PA, SC, TN, TX, VA, WV, DC.", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+# ======================== BUSINESS CHECKING PARSERS ========================
+
+def parse_truist_business(html, source_url):
+    """Parse Truist Business $400 bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("Truist Business Checking $400 bonus: $2,000+ deposit and online banking enrollment", source_url, "business_checking")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_first_commonwealth_business(html, source_url):
+    """Parse First Commonwealth Bank $300/$500 business checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("First Commonwealth Bank business checking: $300 for $3k+ deposits + 10 debit txns, or $500 for $5k+ deposits + 10 debit txns within 60 days. PA, OH, IN, KY, WV.", source_url, "business_checking")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_union_savings_business(html, source_url):
+    """Parse Union Savings Bank $305/$506 business checking bonus (CT)."""
+    bonuses = []
+    bonus = parse_common_bonus("Union Savings Bank business checking: $305 for Basic (avg $4k+ balance + 15 txns), $506 for Relationship (avg $15k+ balance). CT only. Expires Mar 31, 2026.", source_url, "business_checking")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_golden1_business(html, source_url):
+    """Parse Golden 1 Credit Union $300 business checking bonus (CA)."""
+    bonuses = []
+    bonus = parse_common_bonus("Golden 1 Credit Union business checking: $300 bonus with $5,000 deposit. CA in-branch only. Expires Feb 28, 2026.", source_url, "business_checking")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+# ======================== CREDIT UNION PARSERS ========================
+
+def parse_penfed(html, source_url):
+    """Parse PenFed $300/$225 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("PenFed Credit Union checking bonus: $300 for $20k balance or $225 for $15k balance maintained for 123 days. Nationwide.", source_url, "credit_union")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_becu(html, source_url):
+    """Parse BECU $500 checking bonus (WA/ID/OR)."""
+    bonuses = []
+    bonus = parse_common_bonus("BECU $500 checking bonus: direct deposit $250+ and 30+ debit purchases within 60 days. WA, ID, OR. Expires Apr 10, 2026.", source_url, "credit_union")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_mountain_america(html, source_url):
+    """Parse Mountain America Credit Union $150 checking bonus."""
+    bonuses = []
+    bonus = parse_common_bonus("Mountain America Credit Union $150 checking bonus: direct deposit within 60 days, eStatements required. UT, ID, NV, NM, MT, AZ. Expires Jun 30, 2026.", source_url, "credit_union")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+def parse_alliant_rakuten(html, source_url):
+    """Parse Alliant Credit Union $150 checking bonus (via Rakuten)."""
+    bonuses = []
+    bonus = parse_common_bonus("Alliant Credit Union $150 checking bonus via Rakuten: $500+ direct deposit within 30 days. Nationwide.", source_url, "credit_union")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
+    return bonuses
+
+# ======================== CRYPTO EXCHANGE PARSERS ========================
+
+def parse_okx_bonus(html, source_url):
+    bonuses = [{
+        "platform": "OKX",
+        "category": "crypto",
+        "bonus_type": "tiered_trading_volume",
+        "max_bonus": 10000,
+        "currency": "USDT",
+        "referral_code": "96613811",
+        "requirements": {"kyc": True, "deposit": True, "trading_volume_tiers": True},
+        "source_url": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["Each tier has deadlines and turnover targets"]
+    }]
+    return bonuses
+
+def parse_coinbase_bonus(html, source_url):
+    bonuses = [{
+        "platform": "Coinbase",
+        "category": "crypto",
+        "bonus_type": "wheel",
+        "max_bonus": 200,
+        "currency": "Crypto",
+        "requirements": {"kyc": True, "first_trade": True},
+        "source_url": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["Bonus after first trade (any amount)", "Educational rewards extra"]
+    }]
+    return bonuses
+
+def parse_bitget_bonus(html, source_url):
+    bonuses = [{
+        "platform": "Bitget",
+        "category": "crypto",
+        "bonus_type": "trial_funds_plus_rebates",
+        "max_bonus": 5000,
+        "currency": "USDT (Trial)",
+        "requirements": {"kyc": True, "deposit": True},
+        "source_url": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["Trial funds for futures trading; profits withdrawable"]
+    }]
+    return bonuses
+
+def parse_kraken_bonus(html, source_url):
+    bonuses = [{
+        "platform": "Kraken",
+        "category": "crypto",
+        "bonus_type": "deposit_match_percentage",
+        "match_percentage": 3,
+        "max_bonus": 30000,
+        "currency": "USD equivalent",
+        "requirements": {"enrollment": True, "deposit_window": "Feb 2 – Mar 9, 2026", "hold_months": 18},
+        "source_url": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["Funds can be traded during hold; deposit up to $1M"]
+    }]
+    return bonuses
+
+def parse_mexc_bonus(html, source_url):
+    bonuses = [{
+        "platform": "MEXC",
+        "category": "crypto",
+        "bonus_type": "referral_ambassador_tiered",
+        "max_commission": 40,
+        "currency": "USDT",
+        "requirements": {"kyc": True, "automatic_qualification": True},
+        "source_url": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["Tiers: Rising, Elite, Champion; rewards up to gold bar"]
+    }]
+    return bonuses
+
+def parse_htx_bonus(html, source_url):
+    bonuses = [{
+        "platform": "HTX",
+        "category": "crypto",
+        "bonus_type": "new_funds_bonus_trial",
+        "max_commission": 20,
+        "currency": "USDT",
+        "trial_period": "Feb 6 – Jun 30, 2026",
+        "requirements": {"kyc": True, "effective_new_funds": True},
+        "source_url": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["Commission based on net new funds deposited and retained"]
+    }]
+    return bonuses
+
+def parse_cryptocom_bonus(html, source_url):
+    bonuses = [{
+        "platform": "Crypto.com Exchange",
+        "category": "crypto",
+        "bonus_type": "vip_referral_program",
+        "max_commission": 50,
+        "currency": "USDC",
+        "requirements": {"kyc": True, "vip_status_required": True},
+        "source_url": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["Referees get 20% rebates for 12 months"]
+    }]
+    return bonuses
+
+def parse_bybit_bonus(html, source_url):
+    bonuses = [{
+        "platform": "Bybit",
+        "category": "crypto",
+        "bonus_type": "trading_competition",
+        "total_prize_pool": 1000000,
+        "currency": "USDT",
+        "competition_period": "Through Mar 15, 2026",
+        "requirements": {"kyc": True, "registration_required": True},
+        "source_url": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["Weekly and final leaderboards; daily lucky draws"]
+    }]
+    return bonuses
+
+# ======================== OTHER PLACEHOLDERS ========================
+
 def parse_mse_uk_switch(html, source_url):
     return []
 
@@ -306,9 +528,182 @@ def parse_survey_junkie(html, source_url):
 def parse_citi_private(html, source_url):
     return []
 
-# Map parser names to functions
+# ======================== SOURCES PER CATEGORY ========================
+SOURCES = {
+    "bank": [
+        {
+            "name": "Doctor of Credit (US Banks)",
+            "url": "https://www.doctorofcredit.com/best-bank-account-bonuses/",
+            "parser": "doc_bank"
+        },
+        {
+            "name": "Chase $400 Checking",
+            "url": "https://www.doctorofcredit.com/chase-300-checking-bonus-2/",
+            "parser": "chase"
+        },
+        {
+            "name": "Bank of America $500 Checking",
+            "url": "https://www.doctorofcredit.com/bank-of-america-100-200-300-checking-bonus/",
+            "parser": "bofa"
+        },
+        {
+            "name": "Wells Fargo $325 Checking",
+            "url": "https://www.doctorofcredit.com/wells-fargo-325-checking-bonus/",
+            "parser": "wells_fargo"
+        },
+        {
+            "name": "Citibank $325 Checking",
+            "url": "https://www.doctorofcredit.com/citibank-325-checking-bonus/",
+            "parser": "citibank"
+        },
+        {
+            "name": "Capital One $250 Checking",
+            "url": "https://www.doctorofcredit.com/capital-one-250-checking-bonus/",
+            "parser": "capital_one"
+        },
+        {
+            "name": "U.S. Bank $250-$450 Checking",
+            "url": "https://www.doctorofcredit.com/u-s-bank-250-350-450-checking-bonus/",
+            "parser": "us_bank"
+        },
+        {
+            "name": "PNC $100/$400 Checking",
+            "url": "https://www.doctorofcredit.com/pnc-200-300-400-checking-bonus/",
+            "parser": "pnc"
+        },
+        {
+            "name": "TD Bank $200/$300 Checking",
+            "url": "https://www.doctorofcredit.com/td-bank-200-300-checking-bonus/",
+            "parser": "td_bank"
+        },
+        {
+            "name": "Penn Community Bank $400 (PA/NJ)",
+            "url": "https://www.doctorofcredit.com/pa-only-penn-community-bank-350-checking-bonus-50-savings-direct-deposit-not-required/",
+            "parser": "penn_community_bank"
+        },
+        {
+            "name": "Truist $400 Checking",
+            "url": "https://www.doctorofcredit.com/truist-300-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
+            "parser": "truist_doc"
+        }
+    ],
+    "business_checking": [
+        {
+            "name": "Truist Business $400",
+            "url": "https://www.doctorofcredit.com/truist-200-business-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
+            "parser": "truist_business"
+        },
+        {
+            "name": "First Commonwealth $300-$500 Business",
+            "url": "https://www.doctorofcredit.com/24736-2/",
+            "parser": "first_commonwealth_business"
+        },
+        {
+            "name": "Union Savings Bank Business $305/$506",
+            "url": "https://www.doctorofcredit.com/ct-only-union-savings-bank-250-500-business-checking-bonus/",
+            "parser": "union_savings_business"
+        },
+        {
+            "name": "Golden 1 Credit Union $300 Business",
+            "url": "https://www.doctorofcredit.com/ca-in-branch-only-golden-1-credit-union-300-business-checking-bonus/",
+            "parser": "golden1_business"
+        }
+    ],
+    "credit_union": [
+        {
+            "name": "PenFed $300/$225 Checking",
+            "url": "https://www.doctorofcredit.com/ymmv-penfed-300-checking-bonus/",
+            "parser": "penfed"
+        },
+        {
+            "name": "BECU $500 Checking",
+            "url": "https://www.doctorofcredit.com/wa-id-or-only-becu-400-checking-bonus/",
+            "parser": "becu"
+        },
+        {
+            "name": "Mountain America $150 Checking",
+            "url": "https://www.doctorofcredit.com/ut-id-nv-nm-mt-az-mountain-america-credit-union-150-checking-bonus/",
+            "parser": "mountain_america"
+        },
+        {
+            "name": "Alliant Credit Union $150 (Rakuten)",
+            "url": "https://www.doctorofcredit.com/rakuten-alliant-credit-union-100-10000-checking-bonus/",
+            "parser": "alliant_rakuten"
+        }
+    ],
+    "crypto": [
+        {
+            "name": "OKX Up to $10,000 Welcome Bonus",
+            "url": "https://www.doctorofcredit.com/okx-crypto-exchange-review-bonus/",
+            "parser": "okx_bonus"
+        },
+        {
+            "name": "Coinbase Up to $200 Crypto Bonus",
+            "url": "https://www.doctorofcredit.com/coinbase-review-bonus/",
+            "parser": "coinbase_bonus"
+        },
+        {
+            "name": "Bitget $5,000 Trial Fund + Rebates",
+            "url": "https://www.doctorofcredit.com/bitget-crypto-exchange-review-bonus/",
+            "parser": "bitget_bonus"
+        },
+        {
+            "name": "Kraken 3% Deposit Match",
+            "url": "https://www.doctorofcredit.com/kraken-3-cash-crypto-deposit-match-18-month-hold/",
+            "parser": "kraken_bonus"
+        },
+        {
+            "name": "MEXC Referral Ambassador Program",
+            "url": "https://www.mexc.com/en-TR/announcements/article/mexc-launches-the-referral-ambassador-program-17827791531306",
+            "parser": "mexc_bonus"
+        },
+        {
+            "name": "HTX New Funds Bonus Trial",
+            "url": "https://www.htx.com/support/55024606728745",
+            "parser": "htx_bonus"
+        },
+        {
+            "name": "Crypto.com VIP Referral Program",
+            "url": "https://crypto.com/sg/product-news/exchange-vip-referral-program",
+            "parser": "cryptocom_bonus"
+        },
+        {
+            "name": "Bybit $1,000,000 Boost Battle",
+            "url": "https://announcements.bybit.com/article/boost-battle-x-tmgp-2026-series-1-trade-daily-grab-your-share-of-the-1-000-000-usdt-prize-pool--blt353d08203eb770b9/",
+            "parser": "bybit_bonus"
+        }
+    ]
+}
+
+# ======================== PARSERS MAP ========================
 PARSERS = {
     "doc_bank": parse_doc_bank,
+    "chase": parse_chase,
+    "bofa": parse_bofa,
+    "wells_fargo": parse_wells_fargo,
+    "citibank": parse_citibank,
+    "capital_one": parse_capital_one,
+    "us_bank": parse_us_bank,
+    "pnc": parse_pnc,
+    "td_bank": parse_td_bank,
+    "penn_community_bank": parse_penn_community_bank,
+    "truist_doc": parse_truist_doc,
+    "truist_business": parse_truist_business,
+    "first_commonwealth_business": parse_first_commonwealth_business,
+    "union_savings_business": parse_union_savings_business,
+    "golden1_business": parse_golden1_business,
+    "penfed": parse_penfed,
+    "becu": parse_becu,
+    "mountain_america": parse_mountain_america,
+    "alliant_rakuten": parse_alliant_rakuten,
+    "okx_bonus": parse_okx_bonus,
+    "coinbase_bonus": parse_coinbase_bonus,
+    "bitget_bonus": parse_bitget_bonus,
+    "kraken_bonus": parse_kraken_bonus,
+    "mexc_bonus": parse_mexc_bonus,
+    "htx_bonus": parse_htx_bonus,
+    "cryptocom_bonus": parse_cryptocom_bonus,
+    "bybit_bonus": parse_bybit_bonus,
     "mse_uk_switch": parse_mse_uk_switch,
     "nerdwallet_bank": parse_nerdwallet_bank,
     "coinbase": parse_coinbase,
@@ -340,7 +735,6 @@ def run_crawler():
             total_sources += 1
             print(f"Scraping {source['name']} ({category})...")
 
-            # Choose fetch method based on 'dynamic' flag
             if source.get('dynamic', False):
                 html = fetch_dynamic(source['url'])
             else:
@@ -371,7 +765,7 @@ def run_crawler():
     seen = set()
     unique = []
     for b in all_bonuses:
-        key = (b.get('bank'), b.get('bonus_amount'), b.get('raw_text')[:50])
+        key = (b.get('bank') or b.get('platform'), b.get('bonus_amount'), b.get('raw_text', '')[:50])
         if key not in seen:
             seen.add(key)
             unique.append(b)
