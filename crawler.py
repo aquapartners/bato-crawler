@@ -636,41 +636,49 @@ SOURCES = {
             "name": "OKX Up to $10,000 Welcome Bonus",
             "url": "https://www.doctorofcredit.com/okx-crypto-exchange-review-bonus/",
             "parser": "okx_bonus"
+            "dynamic": True
         },
         {
             "name": "Coinbase Up to $200 Crypto Bonus",
             "url": "https://www.doctorofcredit.com/coinbase-review-bonus/",
             "parser": "coinbase_bonus"
+            "dynamic": True
         },
         {
             "name": "Bitget $5,000 Trial Fund + Rebates",
             "url": "https://www.doctorofcredit.com/bitget-crypto-exchange-review-bonus/",
             "parser": "bitget_bonus"
+            "dynamic": True
         },
         {
             "name": "Kraken 3% Deposit Match",
             "url": "https://www.doctorofcredit.com/kraken-3-cash-crypto-deposit-match-18-month-hold/",
             "parser": "kraken_bonus"
+            "dynamic": True
         },
         {
             "name": "MEXC Referral Ambassador Program",
             "url": "https://www.mexc.com/en-TR/announcements/article/mexc-launches-the-referral-ambassador-program-17827791531306",
             "parser": "mexc_bonus"
+            "dynamic": True
         },
         {
             "name": "HTX New Funds Bonus Trial",
             "url": "https://www.htx.com/support/55024606728745",
             "parser": "htx_bonus"
+            "dynamic": True
         },
         {
             "name": "Crypto.com VIP Referral Program",
             "url": "https://crypto.com/sg/product-news/exchange-vip-referral-program",
             "parser": "cryptocom_bonus"
+            "dynamic": True
         },
         {
             "name": "Bybit $1,000,000 Boost Battle",
             "url": "https://announcements.bybit.com/article/boost-battle-x-tmgp-2026-series-1-trade-daily-grab-your-share-of-the-1-000-000-usdt-prize-pool--blt353d08203eb770b9/",
             "parser": "bybit_bonus"
+            "dynamic": True
         }
     ]
 }
