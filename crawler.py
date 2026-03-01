@@ -481,7 +481,7 @@ def parse_robinhood_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Robinhood free stock bonus up to $500 when you deposit funds", source_url, "investment")
+        bonus = parse_common_bonus(text, source_url, "investment")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -492,7 +492,7 @@ def parse_webull_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Webull deposit bonus up to $1,500+ free stocks", source_url, "investment")
+        bonus = parse_common_bonus(text, source_url, "investment")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -504,7 +504,7 @@ def parse_airbnb_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Airbnb referral bonus: both you and friend get travel credit when friend books", source_url, "referral")
+        bonus = parse_common_bonus(text, source_url, "referral")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -515,7 +515,7 @@ def parse_uber_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Uber referral bonus: free ride credit for you and friend", source_url, "referral")
+        bonus = parse_common_bonus(text, source_url, "referral")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -526,7 +526,7 @@ def parse_doordash_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("DoorDash referral bonus: delivery credit for you and friend", source_url, "referral")
+        bonus = parse_common_bonus(text, source_url, "referral")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -538,7 +538,7 @@ def parse_rakuten_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Rakuten cashback bonus: $30 when you spend $30", source_url, "retail")
+        bonus = parse_common_bonus(text, source_url, "retail")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -549,7 +549,7 @@ def parse_honey_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Honey (PayPal) $10 cashback bonus", source_url, "retail")
+        bonus = parse_common_bonus(text, source_url, "retail")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -561,7 +561,7 @@ def parse_delta_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Delta SkyMiles credit card bonus: 50,000+ miles", source_url, "travel")
+        bonus = parse_common_bonus(text, source_url, "travel")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -572,7 +572,7 @@ def parse_marriott_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Marriott Bonvoy credit card bonus: 50,000+ points", source_url, "travel")
+        bonus = parse_common_bonus(text, source_url, "travel")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -584,7 +584,7 @@ def parse_swagbucks_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Swagbucks signup bonus: $10 cash", source_url, "survey")
+        bonus = parse_common_bonus(text, source_url, "survey")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
@@ -595,7 +595,7 @@ def parse_survey_junkie_bonus(html, source_url):
     article = soup.find('article')
     if article:
         text = article.get_text()
-        bonus = parse_common_bonus("Survey Junkie signup bonus: $5 cash", source_url, "survey")
+        bonus = parse_common_bonus(text, source_url, "survey")
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
