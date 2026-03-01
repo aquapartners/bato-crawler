@@ -288,70 +288,102 @@ def parse_truist_doc(html, source_url):
 # ======================== BUSINESS CHECKING PARSERS ========================
 
 def parse_truist_business(html, source_url):
-    """Parse Truist Business $400 bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("Truist Business Checking $400 bonus: $2,000+ deposit and online banking enrollment", source_url, "business_checking")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
+    return [{
+        "bank": "Truist",
+        "bonus_amount": 400,
+        "account_type": "business",
+        "raw_text": "Truist Business Checking $400 bonus: $2,000+ deposit and online banking enrollment",
+        "category": "business_checking",
+        "source": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": []
+    }]
 
 def parse_first_commonwealth_business(html, source_url):
-    """Parse First Commonwealth Bank $300/$500 business checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("First Commonwealth Bank business checking: $300 for $3k+ deposits + 10 debit txns, or $500 for $5k+ deposits + 10 debit txns within 60 days. PA, OH, IN, KY, WV.", source_url, "business_checking")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
+    return [{
+        "bank": "First Commonwealth Bank",
+        "bonus_amount": 300,
+        "account_type": "business",
+        "raw_text": "First Commonwealth Bank business checking: $300 for $3k+ deposits + 10 debit txns, or $500 for $5k+ deposits + 10 debit txns within 60 days. PA, OH, IN, KY, WV.",
+        "category": "business_checking",
+        "source": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": []
+    }]
 
 def parse_union_savings_business(html, source_url):
-    """Parse Union Savings Bank $305/$506 business checking bonus (CT)."""
-    bonuses = []
-    bonus = parse_common_bonus("Union Savings Bank business checking: $305 for Basic (avg $4k+ balance + 15 txns), $506 for Relationship (avg $15k+ balance). CT only. Expires Mar 31, 2026.", source_url, "business_checking")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
+    return [{
+        "bank": "Union Savings Bank",
+        "bonus_amount": 305,
+        "account_type": "business",
+        "raw_text": "Union Savings Bank business checking: $305 for Basic (avg $4k+ balance + 15 txns), $506 for Relationship (avg $15k+ balance). CT only. Expires Mar 31, 2026.",
+        "category": "business_checking",
+        "source": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": []
+    }]
 
 def parse_golden1_business(html, source_url):
-    """Parse Golden 1 Credit Union $300 business checking bonus (CA)."""
-    bonuses = []
-    bonus = parse_common_bonus("Golden 1 Credit Union business checking: $300 bonus with $5,000 deposit. CA in-branch only. Expires Feb 28, 2026.", source_url, "business_checking")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
+    return [{
+        "bank": "Golden 1 Credit Union",
+        "bonus_amount": 300,
+        "account_type": "business",
+        "raw_text": "Golden 1 Credit Union business checking: $300 bonus with $5,000 deposit. CA in-branch only. Expires Feb 28, 2026.",
+        "category": "business_checking",
+        "source": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": []
+    }]
 
 # ======================== CREDIT UNION PARSERS ========================
 
 def parse_penfed(html, source_url):
-    """Parse PenFed $300/$225 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("PenFed Credit Union checking bonus: $300 for $20k balance or $225 for $15k balance maintained for 123 days. Nationwide.", source_url, "credit_union")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
+    return [{
+        "bank": "PenFed Credit Union",
+        "bonus_amount": 300,
+        "account_type": "checking",
+        "raw_text": "PenFed Credit Union checking bonus: $300 for $20k balance or $225 for $15k balance maintained for 123 days. Nationwide.",
+        "category": "credit_union",
+        "source": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": []
+    }]
 
 def parse_becu(html, source_url):
-    """Parse BECU $500 checking bonus (WA/ID/OR)."""
-    bonuses = []
-    bonus = parse_common_bonus("BECU $500 checking bonus: direct deposit $250+ and 30+ debit purchases within 60 days. WA, ID, OR. Expires Apr 10, 2026.", source_url, "credit_union")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
+    return [{
+        "bank": "BECU",
+        "bonus_amount": 500,
+        "account_type": "checking",
+        "raw_text": "BECU $500 checking bonus: direct deposit $250+ and 30+ debit purchases within 60 days. WA, ID, OR. Expires Apr 10, 2026.",
+        "category": "credit_union",
+        "source": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": []
+    }]
 
 def parse_mountain_america(html, source_url):
-    """Parse Mountain America Credit Union $150 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("Mountain America Credit Union $150 checking bonus: direct deposit within 60 days, eStatements required. UT, ID, NV, NM, MT, AZ. Expires Jun 30, 2026.", source_url, "credit_union")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
+    return [{
+        "bank": "Mountain America Credit Union",
+        "bonus_amount": 150,
+        "account_type": "checking",
+        "raw_text": "Mountain America Credit Union $150 checking bonus: direct deposit within 60 days, eStatements required. UT, ID, NV, NM, MT, AZ. Expires Jun 30, 2026.",
+        "category": "credit_union",
+        "source": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": []
+    }]
 
 def parse_alliant_rakuten(html, source_url):
-    """Parse Alliant Credit Union $150 checking bonus (via Rakuten)."""
-    bonuses = []
-    bonus = parse_common_bonus("Alliant Credit Union $150 checking bonus via Rakuten: $500+ direct deposit within 30 days. Nationwide.", source_url, "credit_union")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
+    return [{
+        "bank": "Alliant Credit Union",
+        "bonus_amount": 150,
+        "account_type": "checking",
+        "raw_text": "Alliant Credit Union $150 checking bonus via Rakuten: $500+ direct deposit within 30 days. Nationwide.",
+        "category": "credit_union",
+        "source": source_url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": []
+    }]
 
 # ======================== CRYPTO PARSERS ========================
 def parse_okx_bonus(html, source_url):
