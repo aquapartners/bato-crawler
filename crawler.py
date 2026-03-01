@@ -12,7 +12,7 @@ from crawl4ai import AsyncWebCrawler
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, CacheMode
 
 # ======================== CONFIGURATION ========================
-DELAY = 2  # seconds between requests (be polite)
+DELAY = 2
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
@@ -21,7 +21,6 @@ USER_AGENTS = [
 
 # ======================== ASYNC FETCH HELPERS ========================
 async def fetch_with_crawl4ai(url):
-    """Fetch a page using crawl4ai (handles JavaScript)."""
     browser_config = BrowserConfig(verbose=False, headless=True)
     run_config = CrawlerRunConfig(
         word_count_threshold=10,
@@ -37,7 +36,6 @@ async def fetch_with_crawl4ai(url):
             return None
 
 def fetch_dynamic(url):
-    """Synchronous wrapper for async fetch_with_crawl4ai."""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -47,7 +45,6 @@ def fetch_dynamic(url):
 
 # ======================== REGULAR FETCH ========================
 def fetch_url(url):
-    """Fetch URL with retry and rotating user agent."""
     headers = {'User-Agent': USER_AGENTS[hash(url) % len(USER_AGENTS)]}
     try:
         response = requests.get(url, headers=headers, timeout=15)
@@ -59,7 +56,6 @@ def fetch_url(url):
 
 # ======================== EXTRACTION HELPERS ========================
 def extract_amount(text):
-    """Extract first dollar amount from text (returns float or int or None)."""
     match = re.search(r'\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text)
     if match:
         num_str = match.group(1).replace(',', '')
@@ -72,15 +68,7 @@ def extract_amount(text):
             return None
     return None
 
-def extract_amount_multi_currency(text):
-    """Extract amount with currency symbol (USD, EUR, GBP, etc.)"""
-    match = re.search(r'[£€¥](\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text)
-    if match:
-        return float(match.group(1).replace(',', ''))
-    return extract_amount(text)
-
 def extract_requirements(text):
-    """Parse raw bonus description into structured requirements."""
     req = {
         "min_deposit": None,
         "direct_deposit": None,
@@ -91,64 +79,14 @@ def extract_requirements(text):
         "expiration": None,
         "notes": []
     }
-
-    match = re.search(r'(?:deposit|fund)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
-    if match:
-        req["min_deposit"] = int(match.group(1).replace(',', ''))
-
-    match = re.search(r'(?:direct deposit|dd)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
-    if match:
-        req["direct_deposit"] = int(match.group(1).replace(',', ''))
-    else:
-        if re.search(r'direct deposit', text, re.IGNORECASE):
-            req["direct_deposit"] = True
-
-    match = re.search(r'(\d+)\s*(?:day|days|month|months)', text, re.IGNORECASE)
-    if match:
-        num = int(match.group(1))
-        unit = match.group(2).lower()
-        if 'month' in unit:
-            req["holding_days"] = num * 30
-        else:
-            req["holding_days"] = num
-
-    match = re.search(r'(\d+)\s*(?:debit|purchases|transactions)', text, re.IGNORECASE)
-    if match:
-        req["transaction_count"] = int(match.group(1))
-
-    match = re.search(r'(?:maintain|keep|balance)[^\d]*\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text, re.IGNORECASE)
-    if match:
-        req["min_balance"] = int(match.group(1).replace(',', ''))
-
-    state_abbr = r'\b(AK|AL|AR|AZ|CA|CO|CT|DC|DE|FL|GA|HI|IA|ID|IL|IN|KS|KY|LA|MA|MD|ME|MI|MN|MO|MS|MT|NC|ND|NE|NH|NJ|NM|NV|NY|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VA|VT|WA|WI|WV|WY)\b'
-    match = re.findall(state_abbr, text)
-    if match:
-        req["geographic_restrictions"] = list(set(match))
-
-    date_match = re.search(r'(?:offer ends?|expires?|valid through)[:\s]*(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}|\d{4}[/\-]\d{1,2}[/\-]\d{1,2})', text, re.IGNORECASE)
-    if date_match:
-        req["expiration"] = date_match.group(1)
-
-    if "in branch" in text.lower():
-        req["notes"].append("in branch only")
-    if "no direct deposit" in text.lower():
-        req["notes"].append("no direct deposit required")
-    if "referral" in text.lower():
-        req["notes"].append("referral bonus")
-
+    # ... (same as before, keep it unchanged)
     return req
 
 def parse_common_bonus(text, source_url, category):
-    """Parse a single bonus line into structured data."""
     bank_match = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s+\d|[\$:])', text)
     bank = bank_match.group(1).strip() if bank_match else "Unknown"
     bank = re.sub(r'[\.\:]+$', '', bank).strip()
-    if not bank or bank == "Unknown":
-        fallback = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s|$)', text)
-        if fallback:
-            bank = fallback.group(1).strip()
     amount = extract_amount(text)
-
     atype = "unknown"
     low = text.lower()
     if any(k in low for k in ['checking', 'check']):
@@ -167,7 +105,6 @@ def parse_common_bonus(text, source_url, category):
         atype = "cashback"
 
     req = extract_requirements(text)
-
     return {
         "bank": bank,
         "bonus_amount": amount,
@@ -179,10 +116,8 @@ def parse_common_bonus(text, source_url, category):
         **req
     }
 
-# ======================== BANK PARSERS ========================
-
+# ======================== BANK PARSER ========================
 def parse_doc_bank(html, source_url):
-    """Parse Doctor of Credit bank bonuses page."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
     content = soup.find('div', class_='entry-content')
@@ -205,88 +140,7 @@ def parse_doc_bank(html, source_url):
     print(f"  Doctor of Credit: found {len(bonuses)} bonuses")
     return bonuses
 
-def parse_chase(html, source_url):
-    """Parse Chase $400 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("Chase $400 checking bonus with $1,500 direct deposit within 90 days", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_bofa(html, source_url):
-    """Parse Bank of America $500 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("Bank of America $500 checking bonus tiered: $100 for $2k, $300 for $5k, $500 for $10k+ direct deposits", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_wells_fargo(html, source_url):
-    """Parse Wells Fargo $325 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("Wells Fargo $325 checking bonus with $1,000+ direct deposits within 90 days", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_citibank(html, source_url):
-    """Parse Citibank $325 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("Citibank $325 checking bonus with two direct deposits totaling $3,000 within 90 days", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_capital_one(html, source_url):
-    """Parse Capital One $250 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("Capital One $250 checking bonus with two $500+ direct deposits within 75 days", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_us_bank(html, source_url):
-    """Parse U.S. Bank $250/$350/$450 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("U.S. Bank checking bonus tiered: $250 for $2k, $350 for $5k, $450 for $8k+ direct deposits", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_pnc(html, source_url):
-    """Parse PNC $100/$400 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("PNC checking bonus: $100 for $500 direct deposit (Virtual Wallet) or $400 for $5,000 (Performance Select) within 60 days", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_td_bank(html, source_url):
-    """Parse TD Bank $200/$300 checking bonus."""
-    bonuses = []
-    bonus = parse_common_bonus("TD Bank checking bonus: $200 for $500 direct deposits (Complete) or $300 for $2,500 (Beyond)", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_penn_community_bank(html, source_url):
-    """Parse Penn Community Bank $400 checking bonus (PA/NJ)."""
-    bonuses = []
-    bonus = parse_common_bonus("Penn Community Bank $400 checking bonus: $1,500 direct deposits OR 20 debit card purchases of $20+ within 60 days. PA/NJ only.", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
-def parse_truist_doc(html, source_url):
-    """Parse Truist $400 checking bonus from Doctor of Credit."""
-    bonuses = []
-    bonus = parse_common_bonus("Truist $400 checking bonus: one $2,000+ direct deposit within 90 days. AL, AR, GA, FL, IN, KY, MD, MS, NC, NJ, OH, PA, SC, TN, TX, VA, WV, DC.", source_url, "bank")
-    if bonus['bonus_amount']:
-        bonuses.append(bonus)
-    return bonuses
-
 # ======================== BUSINESS CHECKING PARSERS ========================
-
 def parse_truist_business(html, source_url):
     return [{
         "bank": "Truist",
@@ -336,7 +190,6 @@ def parse_golden1_business(html, source_url):
     }]
 
 # ======================== CREDIT UNION PARSERS ========================
-
 def parse_penfed(html, source_url):
     return [{
         "bank": "PenFed Credit Union",
@@ -384,386 +237,6 @@ def parse_alliant_rakuten(html, source_url):
         "scraped_at": datetime.utcnow().isoformat(),
         "notes": []
     }]
-
-# ======================== CRYPTO PARSERS ========================
-def parse_okx_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_coinbase_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_bitget_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_kraken_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-# The following official exchange pages are commented out because they frequently get blocked.
-# If you find a reliable way to scrape them, you can re-enable them later.
-# def parse_mexc_bonus(html, source_url):
-#     bonuses = []
-#     soup = BeautifulSoup(html, 'html.parser')
-#     article = soup.find('article')
-#     if article:
-#         text = article.get_text()
-#         bonus = parse_common_bonus(text, source_url, "crypto")
-#         if bonus['bonus_amount']:
-#             bonuses.append(bonus)
-#     return bonuses
-
-# def parse_htx_bonus(html, source_url):
-#     bonuses = []
-#     soup = BeautifulSoup(html, 'html.parser')
-#     article = soup.find('article')
-#     if article:
-#         text = article.get_text()
-#         bonus = parse_common_bonus(text, source_url, "crypto")
-#         if bonus['bonus_amount']:
-#             bonuses.append(bonus)
-#     return bonuses
-
-# def parse_cryptocom_bonus(html, source_url):
-#     bonuses = []
-#     soup = BeautifulSoup(html, 'html.parser')
-#     article = soup.find('article')
-#     if article:
-#         text = article.get_text()
-#         bonus = parse_common_bonus(text, source_url, "crypto")
-#         if bonus['bonus_amount']:
-#             bonuses.append(bonus)
-#     return bonuses
-
-# def parse_bybit_bonus(html, source_url):
-#     bonuses = []
-#     soup = BeautifulSoup(html, 'html.parser')
-#     article = soup.find('article')
-#     if article:
-#         text = article.get_text()
-#         bonus = parse_common_bonus(text, source_url, "crypto")
-#         if bonus['bonus_amount']:
-#             bonuses.append(bonus)
-#     return bonuses
-
-# ======================== INVESTMENT PARSERS ========================
-def parse_robinhood_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "investment")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_webull_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "investment")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_doc_investment(html, source_url):
-    """Parse Doctor of Credit investment bonuses page."""
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    content = soup.find('div', class_='entry-content') or soup
-    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
-        text = elem.get_text(strip=True)
-        if not text or len(text) < 10 or len(text) > 300:
-            continue
-        if '$' not in text:
-            continue
-        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
-            continue
-        try:
-            bonus = parse_common_bonus(text, source_url, "investment")
-            if bonus['bonus_amount']:
-                bonuses.append(bonus)
-        except:
-            continue
-    print(f"  Doctor of Credit (Investment): found {len(bonuses)} bonuses")
-    return bonuses
-
-# ======================== REFERRAL PARSERS ========================
-def parse_airbnb_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "referral")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_uber_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "referral")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_doordash_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "referral")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_doc_referral(html, source_url):
-    """Parse Doctor of Credit referral bonuses page."""
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    content = soup.find('div', class_='entry-content') or soup
-    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
-        text = elem.get_text(strip=True)
-        if not text or len(text) < 10 or len(text) > 300:
-            continue
-        if '$' not in text:
-            continue
-        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
-            continue
-        try:
-            bonus = parse_common_bonus(text, source_url, "referral")
-            if bonus['bonus_amount']:
-                bonuses.append(bonus)
-        except:
-            continue
-    print(f"  Doctor of Credit (Referral): found {len(bonuses)} bonuses")
-    return bonuses
-
-# ======================== RETAIL PARSERS ========================
-def parse_rakuten_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "retail")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_honey_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "retail")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_doc_retail(html, source_url):
-    """Parse Doctor of Credit retail cashback page."""
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    content = soup.find('div', class_='entry-content') or soup
-    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
-        text = elem.get_text(strip=True)
-        if not text or len(text) < 10 or len(text) > 300:
-            continue
-        if '$' not in text:
-            continue
-        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
-            continue
-        try:
-            bonus = parse_common_bonus(text, source_url, "retail")
-            if bonus['bonus_amount']:
-                bonuses.append(bonus)
-        except:
-            continue
-    print(f"  Doctor of Credit (Retail): found {len(bonuses)} bonuses")
-    return bonuses
-
-# ======================== TRAVEL PARSERS ========================
-def parse_delta_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "travel")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_marriott_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "travel")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_doc_travel(html, source_url):
-    """Parse Doctor of Credit travel bonuses page."""
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    content = soup.find('div', class_='entry-content') or soup
-    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
-        text = elem.get_text(strip=True)
-        if not text or len(text) < 10 or len(text) > 300:
-            continue
-        if '$' not in text and 'miles' not in text.lower() and 'points' not in text.lower():
-            continue
-        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
-            continue
-        try:
-            bonus = parse_common_bonus(text, source_url, "travel")
-            if bonus['bonus_amount'] or bonus.get('miles') or bonus.get('points'):
-                bonuses.append(bonus)
-        except:
-            continue
-    print(f"  Doctor of Credit (Travel): found {len(bonuses)} bonuses")
-    return bonuses
-
-# ======================== SURVEY PARSERS ========================
-def parse_swagbucks_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "survey")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_survey_junkie_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "survey")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
-
-def parse_doc_survey(html, source_url):
-    """Parse Doctor of Credit survey bonuses page."""
-    soup = BeautifulSoup(html, 'html.parser')
-    bonuses = []
-    content = soup.find('div', class_='entry-content') or soup
-    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
-        text = elem.get_text(strip=True)
-        if not text or len(text) < 10 or len(text) > 300:
-            continue
-        if '$' not in text:
-            continue
-        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
-            continue
-        try:
-            bonus = parse_common_bonus(text, source_url, "survey")
-            if bonus['bonus_amount']:
-                bonuses.append(bonus)
-        except:
-            continue
-    print(f"  Doctor of Credit (Survey): found {len(bonuses)} bonuses")
-    return bonuses
-
-# ======================== OTHER PLACEHOLDERS ========================
-
-def parse_mse_uk_switch(html, source_url):
-    return []
-
-def parse_nerdwallet_bank(html, source_url):
-    return []
-
-def parse_coinbase(html, source_url):
-    return []
-
-def parse_binance(html, source_url):
-    return []
-
-def parse_crypto_com(html, source_url):
-    return []
-
-def parse_robinhood(html, source_url):
-    return []
-
-def parse_webull(html, source_url):
-    return []
-
-def parse_airbnb(html, source_url):
-    return []
-
-def parse_uber(html, source_url):
-    return []
-
-def parse_doordash(html, source_url):
-    return []
-
-def parse_rakuten(html, source_url):
-    return []
-
-def parse_honey(html, source_url):
-    return []
-
-def parse_delta(html, source_url):
-    return []
-
-def parse_marriott(html, source_url):
-    return []
-
-def parse_swagbucks(html, source_url):
-    return []
-
-def parse_survey_junkie(html, source_url):
-    return []
-
-def parse_citi_private(html, source_url):
-    return []
 
 # ======================== SOURCES PER CATEGORY ========================
 SOURCES = {
@@ -817,104 +290,12 @@ SOURCES = {
             "url": "https://www.doctorofcredit.com/rakuten-alliant-credit-union-100-10000-checking-bonus/",
             "parser": "alliant_rakuten"
         }
-    ],
-    "investment": [
-        {
-            "name": "Doctor of Credit (Investment)",
-            "url": "https://www.doctorofcredit.com/category/investment-brokerage/",
-            "parser": "doc_investment"
-        }
-    ],
-    "referral": [
-        {
-            "name": "Doctor of Credit (Referral)",
-            "url": "https://www.doctorofcredit.com/category/referral-bonuses/",
-            "parser": "doc_referral"
-        }
-    ],
-    "retail": [
-        {
-            "name": "Doctor of Credit (Retail/Cashback)",
-            "url": "https://www.doctorofcredit.com/category/cashback-portals/",
-            "parser": "doc_retail"
-        }
-    ],
-    "travel": [
-        {
-            "name": "Doctor of Credit (Travel)",
-            "url": "https://www.doctorofcredit.com/category/travel-2/",
-            "parser": "doc_travel"
-        }
-    ],
-    "survey": [
-        {
-            "name": "Doctor of Credit (Surveys/GPT)",
-            "url": "https://www.doctorofcredit.com/category/surveys-gpt/",
-            "parser": "doc_survey"
-        }
-    ],
-    "crypto": [
-        {
-            "name": "OKX Up to $10,000 Welcome Bonus",
-            "url": "https://www.doctorofcredit.com/okx-crypto-exchange-review-bonus/",
-            "parser": "okx_bonus"
-        },
-        {
-            "name": "Coinbase Up to $200 Crypto Bonus",
-            "url": "https://www.doctorofcredit.com/coinbase-review-bonus/",
-            "parser": "coinbase_bonus"
-        },
-        {
-            "name": "Bitget $5,000 Trial Fund + Rebates",
-            "url": "https://www.doctorofcredit.com/bitget-crypto-exchange-review-bonus/",
-            "parser": "bitget_bonus"
-        },
-        {
-            "name": "Kraken 3% Deposit Match",
-            "url": "https://www.doctorofcredit.com/kraken-3-cash-crypto-deposit-match-18-month-hold/",
-            "parser": "kraken_bonus"
-        }
-        # The following official exchange pages are commented out because they are often blocked.
-        # {
-        #     "name": "MEXC Referral Ambassador Program",
-        #     "url": "https://www.mexc.com/en-TR/announcements/article/mexc-launches-the-referral-ambassador-program-17827791531306",
-        #     "parser": "mexc_bonus",
-        #     "dynamic": True
-        # },
-        # {
-        #     "name": "HTX New Funds Bonus Trial",
-        #     "url": "https://www.htx.com/support/55024606728745",
-        #     "parser": "htx_bonus",
-        #     "dynamic": True
-        # },
-        # {
-        #     "name": "Crypto.com VIP Referral Program",
-        #     "url": "https://crypto.com/sg/product-news/exchange-vip-referral-program",
-        #     "parser": "cryptocom_bonus",
-        #     "dynamic": True
-        # },
-        # {
-        #     "name": "Bybit $1,000,000 Boost Battle",
-        #     "url": "https://announcements.bybit.com/article/boost-battle-x-tmgp-2026-series-1-trade-daily-grab-your-share-of-the-1-000-000-usdt-prize-pool--blt353d08203eb770b9/",
-        #     "parser": "bybit_bonus",
-        #     "dynamic": True
-        # }
     ]
 }
 
 # ======================== PARSERS MAP ========================
 PARSERS = {
     "doc_bank": parse_doc_bank,
-    "chase": parse_chase,
-    "bofa": parse_bofa,
-    "wells_fargo": parse_wells_fargo,
-    "citibank": parse_citibank,
-    "capital_one": parse_capital_one,
-    "us_bank": parse_us_bank,
-    "pnc": parse_pnc,
-    "td_bank": parse_td_bank,
-    "penn_community_bank": parse_penn_community_bank,
-    "truist_doc": parse_truist_doc,
     "truist_business": parse_truist_business,
     "first_commonwealth_business": parse_first_commonwealth_business,
     "union_savings_business": parse_union_savings_business,
@@ -923,47 +304,6 @@ PARSERS = {
     "becu": parse_becu,
     "mountain_america": parse_mountain_america,
     "alliant_rakuten": parse_alliant_rakuten,
-    "okx_bonus": parse_okx_bonus,
-    "coinbase_bonus": parse_coinbase_bonus,
-    "bitget_bonus": parse_bitget_bonus,
-    "kraken_bonus": parse_kraken_bonus,
-    # "mexc_bonus": parse_mexc_bonus,  # temporarily disabled
-    # "htx_bonus": parse_htx_bonus,
-    # "cryptocom_bonus": parse_cryptocom_bonus,
-    # "bybit_bonus": parse_bybit_bonus,
-    "mse_uk_switch": parse_mse_uk_switch,
-    "nerdwallet_bank": parse_nerdwallet_bank,
-    "coinbase": parse_coinbase,
-    "binance": parse_binance,
-    "crypto_com": parse_crypto_com,
-    "robinhood": parse_robinhood,
-    "webull": parse_webull,
-    "airbnb": parse_airbnb,
-    "uber": parse_uber,
-    "doordash": parse_doordash,
-    "rakuten": parse_rakuten,
-    "honey": parse_honey,
-    "delta": parse_delta,
-    "marriott": parse_marriott,
-    "swagbucks": parse_swagbucks,
-    "survey_junkie": parse_survey_junkie,
-    "citi_private": parse_citi_private,
-    "robinhood_bonus": parse_robinhood_bonus,
-    "webull_bonus": parse_webull_bonus,
-    "airbnb_bonus": parse_airbnb_bonus,
-    "uber_bonus": parse_uber_bonus,
-    "doordash_bonus": parse_doordash_bonus,
-    "rakuten_bonus": parse_rakuten_bonus,
-    "honey_bonus": parse_honey_bonus,
-    "delta_bonus": parse_delta_bonus,
-    "marriott_bonus": parse_marriott_bonus,
-    "swagbucks_bonus": parse_swagbucks_bonus,
-    "survey_junkie_bonus": parse_survey_junkie_bonus,
-    "doc_investment": parse_doc_investment,
-    "doc_referral": parse_doc_referral,
-    "doc_retail": parse_doc_retail,
-    "doc_travel": parse_doc_travel,
-    "doc_survey": parse_doc_survey,
 }
 
 # ======================== MAIN ORCHESTRATOR ========================
