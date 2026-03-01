@@ -357,123 +357,95 @@ def parse_alliant_rakuten(html, source_url):
         bonuses.append(bonus)
     return bonuses
 
-# ======================== CRYPTO EXCHANGE PARSERS ========================
-
+# ======================== CRYPTO PARSERS ========================
 def parse_okx_bonus(html, source_url):
-    bonuses = [{
-        "platform": "OKX",
-        "category": "crypto",
-        "bonus_type": "tiered_trading_volume",
-        "max_bonus": 10000,
-        "currency": "USDT",
-        "referral_code": "96613811",
-        "requirements": {"kyc": True, "deposit": True, "trading_volume_tiers": True},
-        "source_url": source_url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        "notes": ["Each tier has deadlines and turnover targets"]
-    }]
+    bonuses = []
+    soup = BeautifulSoup(html, 'html.parser')
+    article = soup.find('article')
+    if article:
+        text = article.get_text()
+        bonus = parse_common_bonus(text, source_url, "crypto")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
     return bonuses
 
 def parse_coinbase_bonus(html, source_url):
-    bonuses = [{
-        "platform": "Coinbase",
-        "category": "crypto",
-        "bonus_type": "wheel",
-        "max_bonus": 200,
-        "currency": "Crypto",
-        "requirements": {"kyc": True, "first_trade": True},
-        "source_url": source_url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        "notes": ["Bonus after first trade (any amount)", "Educational rewards extra"]
-    }]
+    bonuses = []
+    soup = BeautifulSoup(html, 'html.parser')
+    article = soup.find('article')
+    if article:
+        text = article.get_text()
+        bonus = parse_common_bonus(text, source_url, "crypto")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
     return bonuses
 
 def parse_bitget_bonus(html, source_url):
-    bonuses = [{
-        "platform": "Bitget",
-        "category": "crypto",
-        "bonus_type": "trial_funds_plus_rebates",
-        "max_bonus": 5000,
-        "currency": "USDT (Trial)",
-        "requirements": {"kyc": True, "deposit": True},
-        "source_url": source_url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        "notes": ["Trial funds for futures trading; profits withdrawable"]
-    }]
+    bonuses = []
+    soup = BeautifulSoup(html, 'html.parser')
+    article = soup.find('article')
+    if article:
+        text = article.get_text()
+        bonus = parse_common_bonus(text, source_url, "crypto")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
     return bonuses
 
 def parse_kraken_bonus(html, source_url):
-    bonuses = [{
-        "platform": "Kraken",
-        "category": "crypto",
-        "bonus_type": "deposit_match_percentage",
-        "match_percentage": 3,
-        "max_bonus": 30000,
-        "currency": "USD equivalent",
-        "requirements": {"enrollment": True, "deposit_window": "Feb 2 – Mar 9, 2026", "hold_months": 18},
-        "source_url": source_url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        "notes": ["Funds can be traded during hold; deposit up to $1M"]
-    }]
+    bonuses = []
+    soup = BeautifulSoup(html, 'html.parser')
+    article = soup.find('article')
+    if article:
+        text = article.get_text()
+        bonus = parse_common_bonus(text, source_url, "crypto")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
     return bonuses
 
 def parse_mexc_bonus(html, source_url):
-    bonuses = [{
-        "platform": "MEXC",
-        "category": "crypto",
-        "bonus_type": "referral_ambassador_tiered",
-        "max_commission": 40,
-        "currency": "USDT",
-        "requirements": {"kyc": True, "automatic_qualification": True},
-        "source_url": source_url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        "notes": ["Tiers: Rising, Elite, Champion; rewards up to gold bar"]
-    }]
+    bonuses = []
+    soup = BeautifulSoup(html, 'html.parser')
+    article = soup.find('article')
+    if article:
+        text = article.get_text()
+        bonus = parse_common_bonus(text, source_url, "crypto")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
     return bonuses
 
 def parse_htx_bonus(html, source_url):
-    bonuses = [{
-        "platform": "HTX",
-        "category": "crypto",
-        "bonus_type": "new_funds_bonus_trial",
-        "max_commission": 20,
-        "currency": "USDT",
-        "trial_period": "Feb 6 – Jun 30, 2026",
-        "requirements": {"kyc": True, "effective_new_funds": True},
-        "source_url": source_url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        "notes": ["Commission based on net new funds deposited and retained"]
-    }]
+    bonuses = []
+    soup = BeautifulSoup(html, 'html.parser')
+    article = soup.find('article')
+    if article:
+        text = article.get_text()
+        bonus = parse_common_bonus(text, source_url, "crypto")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
     return bonuses
 
 def parse_cryptocom_bonus(html, source_url):
-    bonuses = [{
-        "platform": "Crypto.com Exchange",
-        "category": "crypto",
-        "bonus_type": "vip_referral_program",
-        "max_commission": 50,
-        "currency": "USDC",
-        "requirements": {"kyc": True, "vip_status_required": True},
-        "source_url": source_url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        "notes": ["Referees get 20% rebates for 12 months"]
-    }]
+    bonuses = []
+    soup = BeautifulSoup(html, 'html.parser')
+    article = soup.find('article')
+    if article:
+        text = article.get_text()
+        bonus = parse_common_bonus(text, source_url, "crypto")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
     return bonuses
 
 def parse_bybit_bonus(html, source_url):
-    bonuses = [{
-        "platform": "Bybit",
-        "category": "crypto",
-        "bonus_type": "trading_competition",
-        "total_prize_pool": 1000000,
-        "currency": "USDT",
-        "competition_period": "Through Mar 15, 2026",
-        "requirements": {"kyc": True, "registration_required": True},
-        "source_url": source_url,
-        "scraped_at": datetime.utcnow().isoformat(),
-        "notes": ["Weekly and final leaderboards; daily lucky draws"]
-    }]
+    bonuses = []
+    soup = BeautifulSoup(html, 'html.parser')
+    article = soup.find('article')
+    if article:
+        text = article.get_text()
+        bonus = parse_common_bonus(text, source_url, "crypto")
+        if bonus['bonus_amount']:
+            bonuses.append(bonus)
     return bonuses
+
 # ======================== INVESTMENT PARSERS ========================
 def parse_robinhood_bonus(html, source_url):
     bonuses = []
