@@ -740,56 +740,6 @@ SOURCES = {
             "name": "Doctor of Credit (US Banks)",
             "url": "https://www.doctorofcredit.com/best-bank-account-bonuses/",
             "parser": "doc_bank"
-        },
-        {
-            "name": "Chase $400 Checking",
-            "url": "https://www.doctorofcredit.com/chase-300-checking-bonus-2/",
-            "parser": "chase"
-        },
-        {
-            "name": "Bank of America $500 Checking",
-            "url": "https://www.doctorofcredit.com/bank-of-america-100-200-300-checking-bonus/",
-            "parser": "bofa"
-        },
-        {
-            "name": "Wells Fargo $325 Checking",
-            "url": "https://www.doctorofcredit.com/wells-fargo-325-checking-bonus/",
-            "parser": "wells_fargo"
-        },
-        {
-            "name": "Citibank $325 Checking",
-            "url": "https://www.doctorofcredit.com/citibank-325-checking-bonus/",
-            "parser": "citibank"
-        },
-        {
-            "name": "Capital One $250 Checking",
-            "url": "https://www.doctorofcredit.com/capital-one-250-checking-bonus/",
-            "parser": "capital_one"
-        },
-        {
-            "name": "U.S. Bank $250-$450 Checking",
-            "url": "https://www.doctorofcredit.com/u-s-bank-250-350-450-checking-bonus/",
-            "parser": "us_bank"
-        },
-        {
-            "name": "PNC $100/$400 Checking",
-            "url": "https://www.doctorofcredit.com/pnc-200-300-400-checking-bonus/",
-            "parser": "pnc"
-        },
-        {
-            "name": "TD Bank $200/$300 Checking",
-            "url": "https://www.doctorofcredit.com/td-bank-200-300-checking-bonus/",
-            "parser": "td_bank"
-        },
-        {
-            "name": "Penn Community Bank $400 (PA/NJ)",
-            "url": "https://www.doctorofcredit.com/pa-only-penn-community-bank-350-checking-bonus-50-savings-direct-deposit-not-required/",
-            "parser": "penn_community_bank"
-        },
-        {
-            "name": "Truist $400 Checking",
-            "url": "https://www.doctorofcredit.com/truist-300-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
-            "parser": "truist_doc"
         }
     ],
     "business_checking": [
@@ -838,37 +788,12 @@ SOURCES = {
     ],
     "investment": [
         {
-            "name": "Robinhood $100/$500 Bonus",
-            "url": "https://www.doctorofcredit.com/robinhood-500-bonus/",
-            "parser": "robinhood_bonus"
-        },
-        {
-            "name": "Webull $1500+ Bonus",
-            "url": "https://www.doctorofcredit.com/webull-5000-bonus/",
-            "parser": "webull_bonus"
-        },
-        {
             "name": "Doctor of Credit (Investment)",
             "url": "https://www.doctorofcredit.com/category/investment-brokerage/",
             "parser": "doc_investment"
         }
     ],
     "referral": [
-        {
-            "name": "Airbnb Referral Bonus",
-            "url": "https://www.doctorofcredit.com/airbnb-45-bonus-for-international-stays/",
-            "parser": "airbnb_bonus"
-        },
-        {
-            "name": "Uber Referral Bonus",
-            "url": "https://www.doctorofcredit.com/uber-15-bonus-uber-eats-25/",
-            "parser": "uber_bonus"
-        },
-        {
-            "name": "DoorDash Referral Bonus",
-            "url": "https://www.doctorofcredit.com/doordash-10-off/",
-            "parser": "doordash_bonus"
-        },
         {
             "name": "Doctor of Credit (Referral)",
             "url": "https://www.doctorofcredit.com/category/referral-bonuses/",
@@ -877,16 +802,6 @@ SOURCES = {
     ],
     "retail": [
         {
-            "name": "Rakuten Cashback",
-            "url": "https://www.doctorofcredit.com/rakuten-30-bonus/",
-            "parser": "rakuten_bonus"
-        },
-        {
-            "name": "Honey (PayPal) Cashback",
-            "url": "https://www.doctorofcredit.com/honey-10-bonus/",
-            "parser": "honey_bonus"
-        },
-        {
             "name": "Doctor of Credit (Retail/Cashback)",
             "url": "https://www.doctorofcredit.com/category/cashback-portals/",
             "parser": "doc_retail"
@@ -894,32 +809,12 @@ SOURCES = {
     ],
     "travel": [
         {
-            "name": "Delta SkyMiles Bonus",
-            "url": "https://www.doctorofcredit.com/delta-skymiles-50000-bonus/",
-            "parser": "delta_bonus"
-        },
-        {
-            "name": "Marriott Bonvoy Bonus",
-            "url": "https://www.doctorofcredit.com/marriott-bonvoy-50000-bonus/",
-            "parser": "marriott_bonus"
-        },
-        {
             "name": "Doctor of Credit (Travel)",
             "url": "https://www.doctorofcredit.com/category/travel-2/",
             "parser": "doc_travel"
         }
     ],
     "survey": [
-        {
-            "name": "Swagbucks Signup Bonus",
-            "url": "https://www.doctorofcredit.com/swagbucks-10-bonus/",
-            "parser": "swagbucks_bonus"
-        },
-        {
-            "name": "Survey Junkie Bonus",
-            "url": "https://www.doctorofcredit.com/survey-junkie-5-bonus/",
-            "parser": "survey_junkie_bonus"
-        },
         {
             "name": "Doctor of Credit (Surveys/GPT)",
             "url": "https://www.doctorofcredit.com/category/surveys-gpt/",
