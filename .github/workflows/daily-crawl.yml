@@ -1,7 +1,7 @@
 name: Daily Bonus Crawl
 on:
   schedule:
-    - cron: '*/5 * * * *' # runs every 5 minutes
+    - cron: '*/15 * * * *' # runs every 5 minutes
   workflow_dispatch:       # allow manual run
 
 # Prevent multiple runs from conflicting
