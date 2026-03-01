@@ -469,6 +469,28 @@ def parse_webull_bonus(html, source_url):
             bonuses.append(bonus)
     return bonuses
 
+def parse_doc_investment(html, source_url):
+    """Parse Doctor of Credit investment bonuses page."""
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    content = soup.find('div', class_='entry-content') or soup
+    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
+        text = elem.get_text(strip=True)
+        if not text or len(text) < 10 or len(text) > 300:
+            continue
+        if '$' not in text:
+            continue
+        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
+            continue
+        try:
+            bonus = parse_common_bonus(text, source_url, "investment")
+            if bonus['bonus_amount']:
+                bonuses.append(bonus)
+        except:
+            continue
+    print(f"  Doctor of Credit (Investment): found {len(bonuses)} bonuses")
+    return bonuses
+
 # ======================== REFERRAL PARSERS ========================
 def parse_airbnb_bonus(html, source_url):
     bonuses = []
@@ -503,6 +525,27 @@ def parse_doordash_bonus(html, source_url):
             bonuses.append(bonus)
     return bonuses
 
+def parse_doc_referral(html, source_url):
+    """Parse Doctor of Credit referral bonuses page."""
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    content = soup.find('div', class_='entry-content') or soup
+    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
+        text = elem.get_text(strip=True)
+        if not text or len(text) < 10 or len(text) > 300:
+            continue
+        if '$' not in text:
+            continue
+        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
+            continue
+        try:
+            bonus = parse_common_bonus(text, source_url, "referral")
+            if bonus['bonus_amount']:
+                bonuses.append(bonus)
+        except:
+            continue
+    print(f"  Doctor of Credit (Referral): found {len(bonuses)} bonuses")
+    return bonuses
 # ======================== RETAIL PARSERS ========================
 def parse_rakuten_bonus(html, source_url):
     bonuses = []
@@ -526,6 +569,27 @@ def parse_honey_bonus(html, source_url):
             bonuses.append(bonus)
     return bonuses
 
+def parse_doc_retail(html, source_url):
+    """Parse Doctor of Credit retail cashback page."""
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    content = soup.find('div', class_='entry-content') or soup
+    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
+        text = elem.get_text(strip=True)
+        if not text or len(text) < 10 or len(text) > 300:
+            continue
+        if '$' not in text:
+            continue
+        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
+            continue
+        try:
+            bonus = parse_common_bonus(text, source_url, "retail")
+            if bonus['bonus_amount']:
+                bonuses.append(bonus)
+        except:
+            continue
+    print(f"  Doctor of Credit (Retail): found {len(bonuses)} bonuses")
+    return bonuses
 # ======================== TRAVEL PARSERS ========================
 def parse_delta_bonus(html, source_url):
     bonuses = []
@@ -549,6 +613,27 @@ def parse_marriott_bonus(html, source_url):
             bonuses.append(bonus)
     return bonuses
 
+def parse_doc_travel(html, source_url):
+    """Parse Doctor of Credit travel bonuses page."""
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    content = soup.find('div', class_='entry-content') or soup
+    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
+        text = elem.get_text(strip=True)
+        if not text or len(text) < 10 or len(text) > 300:
+            continue
+        if '$' not in text and 'miles' not in text.lower() and 'points' not in text.lower():
+            continue
+        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
+            continue
+        try:
+            bonus = parse_common_bonus(text, source_url, "travel")
+            if bonus['bonus_amount'] or bonus.get('miles') or bonus.get('points'):
+                bonuses.append(bonus)
+        except:
+            continue
+    print(f"  Doctor of Credit (Travel): found {len(bonuses)} bonuses")
+    return bonuses
 # ======================== SURVEY PARSERS ========================
 def parse_swagbucks_bonus(html, source_url):
     bonuses = []
@@ -571,7 +656,28 @@ def parse_survey_junkie_bonus(html, source_url):
         if bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
-    
+
+def parse_doc_survey(html, source_url):
+    """Parse Doctor of Credit survey bonuses page."""
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    content = soup.find('div', class_='entry-content') or soup
+    for elem in content.find_all(['p', 'li', 'div', 'span', 'h3', 'h4']):
+        text = elem.get_text(strip=True)
+        if not text or len(text) < 10 or len(text) > 300:
+            continue
+        if '$' not in text:
+            continue
+        if any(skip in text.lower() for skip in ['copyright', 'privacy', 'terms', 'search']):
+            continue
+        try:
+            bonus = parse_common_bonus(text, source_url, "survey")
+            if bonus['bonus_amount']:
+                bonuses.append(bonus)
+        except:
+            continue
+    print(f"  Doctor of Credit (Survey): found {len(bonuses)} bonuses")
+    return bonuses
 # ======================== OTHER PLACEHOLDERS ========================
 
 def parse_mse_uk_switch(html, source_url):
@@ -738,6 +844,11 @@ SOURCES = {
         "name": "Webull $1500+ Bonus",
         "url": "https://www.doctorofcredit.com/webull-5000-bonus/",
         "parser": "webull_bonus"
+    },
+    {
+        "name": "Doctor of Credit (Investment)",
+        "url": "https://www.doctorofcredit.com/category/investment-brokerage/",
+        "parser": "doc_investment"
     }
 ],
 
@@ -751,6 +862,11 @@ SOURCES = {
         "name": "Uber Referral Bonus",
         "url": "https://www.doctorofcredit.com/uber-15-bonus-uber-eats-25/",
         "parser": "uber_bonus"
+    },
+    {
+        "name": "Doctor of Credit (Referral)",
+        "url": "https://www.doctorofcredit.com/category/referral-bonuses/",
+        "parser": "doc_referral"
     },
     {
         "name": "DoorDash Referral Bonus",
@@ -769,6 +885,11 @@ SOURCES = {
         "name": "Honey (PayPal) Cashback",
         "url": "https://www.doctorofcredit.com/honey-10-bonus/",
         "parser": "honey_bonus"
+    },
+    {
+        "name": "Doctor of Credit (Retail/Cashback)",
+        "url": "https://www.doctorofcredit.com/category/cashback-portals/",
+        "parser": "doc_retail"
     }
 ],
 
@@ -782,6 +903,11 @@ SOURCES = {
         "name": "Marriott Bonvoy Bonus",
         "url": "https://www.doctorofcredit.com/marriott-bonvoy-50000-bonus/",
         "parser": "marriott_bonus"
+    },
+    {
+        "name": "Doctor of Credit (Travel)",
+        "url": "https://www.doctorofcredit.com/category/travel-2/",
+        "parser": "doc_travel"
     }
 ],
 
@@ -795,6 +921,11 @@ SOURCES = {
         "name": "Survey Junkie Bonus",
         "url": "https://www.doctorofcredit.com/survey-junkie-5-bonus/",
         "parser": "survey_junkie_bonus"
+    },
+    {
+        "name": "Doctor of Credit (Surveys/GPT)",
+        "url": "https://www.doctorofcredit.com/category/surveys-gpt/",
+        "parser": "doc_survey"
     }
 ],
     "crypto": [
@@ -902,6 +1033,11 @@ PARSERS = {
     "marriott_bonus": parse_marriott_bonus,
     "swagbucks_bonus": parse_swagbucks_bonus,
     "survey_junkie_bonus": parse_survey_junkie_bonus,
+    "doc_investment": parse_doc_investment,
+    "doc_referral": parse_doc_referral,
+    "doc_retail": parse_doc_retail,
+    "doc_travel": parse_doc_travel,
+    "doc_survey": parse_doc_survey,
 }
 
 # ======================== MAIN ORCHESTRATOR ========================
