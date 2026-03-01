@@ -207,14 +207,10 @@ def parse_doc_bank(html, source_url):
 
 def parse_chase(html, source_url):
     """Parse Chase $400 checking bonus."""
-    soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
-    # Extract from Doctor of Credit or direct page – simplified
-    full_text = soup.get_text()
-    if '$400' in full_text and 'Chase' in full_text:
-        bonus = parse_common_bonus("Chase $400 checking bonus with $1,500 direct deposit within 90 days", source_url, "bank")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
+    bonus = parse_common_bonus("Chase $400 checking bonus with $1,500 direct deposit within 90 days", source_url, "bank")
+    if bonus['bonus_amount']:
+        bonuses.append(bonus)
     return bonuses
 
 def parse_bofa(html, source_url):
@@ -402,49 +398,51 @@ def parse_kraken_bonus(html, source_url):
             bonuses.append(bonus)
     return bonuses
 
-def parse_mexc_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
+# The following official exchange pages are commented out because they frequently get blocked.
+# If you find a reliable way to scrape them, you can re-enable them later.
+# def parse_mexc_bonus(html, source_url):
+#     bonuses = []
+#     soup = BeautifulSoup(html, 'html.parser')
+#     article = soup.find('article')
+#     if article:
+#         text = article.get_text()
+#         bonus = parse_common_bonus(text, source_url, "crypto")
+#         if bonus['bonus_amount']:
+#             bonuses.append(bonus)
+#     return bonuses
 
-def parse_htx_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
+# def parse_htx_bonus(html, source_url):
+#     bonuses = []
+#     soup = BeautifulSoup(html, 'html.parser')
+#     article = soup.find('article')
+#     if article:
+#         text = article.get_text()
+#         bonus = parse_common_bonus(text, source_url, "crypto")
+#         if bonus['bonus_amount']:
+#             bonuses.append(bonus)
+#     return bonuses
 
-def parse_cryptocom_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
+# def parse_cryptocom_bonus(html, source_url):
+#     bonuses = []
+#     soup = BeautifulSoup(html, 'html.parser')
+#     article = soup.find('article')
+#     if article:
+#         text = article.get_text()
+#         bonus = parse_common_bonus(text, source_url, "crypto")
+#         if bonus['bonus_amount']:
+#             bonuses.append(bonus)
+#     return bonuses
 
-def parse_bybit_bonus(html, source_url):
-    bonuses = []
-    soup = BeautifulSoup(html, 'html.parser')
-    article = soup.find('article')
-    if article:
-        text = article.get_text()
-        bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
-            bonuses.append(bonus)
-    return bonuses
+# def parse_bybit_bonus(html, source_url):
+#     bonuses = []
+#     soup = BeautifulSoup(html, 'html.parser')
+#     article = soup.find('article')
+#     if article:
+#         text = article.get_text()
+#         bonus = parse_common_bonus(text, source_url, "crypto")
+#         if bonus['bonus_amount']:
+#             bonuses.append(bonus)
+#     return bonuses
 
 # ======================== INVESTMENT PARSERS ========================
 def parse_robinhood_bonus(html, source_url):
@@ -546,6 +544,7 @@ def parse_doc_referral(html, source_url):
             continue
     print(f"  Doctor of Credit (Referral): found {len(bonuses)} bonuses")
     return bonuses
+
 # ======================== RETAIL PARSERS ========================
 def parse_rakuten_bonus(html, source_url):
     bonuses = []
@@ -590,6 +589,7 @@ def parse_doc_retail(html, source_url):
             continue
     print(f"  Doctor of Credit (Retail): found {len(bonuses)} bonuses")
     return bonuses
+
 # ======================== TRAVEL PARSERS ========================
 def parse_delta_bonus(html, source_url):
     bonuses = []
@@ -634,6 +634,7 @@ def parse_doc_travel(html, source_url):
             continue
     print(f"  Doctor of Credit (Travel): found {len(bonuses)} bonuses")
     return bonuses
+
 # ======================== SURVEY PARSERS ========================
 def parse_swagbucks_bonus(html, source_url):
     bonuses = []
@@ -678,6 +679,7 @@ def parse_doc_survey(html, source_url):
             continue
     print(f"  Doctor of Credit (Survey): found {len(bonuses)} bonuses")
     return bonuses
+
 # ======================== OTHER PLACEHOLDERS ========================
 
 def parse_mse_uk_switch(html, source_url):
@@ -834,146 +836,143 @@ SOURCES = {
             "parser": "alliant_rakuten"
         }
     ],
-"investment": [
-    {
-        "name": "Robinhood $100/$500 Bonus",
-        "url": "https://www.doctorofcredit.com/robinhood-500-bonus/",
-        "parser": "robinhood_bonus"
-    },
-    {
-        "name": "Webull $1500+ Bonus",
-        "url": "https://www.doctorofcredit.com/webull-5000-bonus/",
-        "parser": "webull_bonus"
-    },
-    {
-        "name": "Doctor of Credit (Investment)",
-        "url": "https://www.doctorofcredit.com/category/investment-brokerage/",
-        "parser": "doc_investment"
-    }
-],
-
-"referral": [
-    {
-        "name": "Airbnb Referral Bonus",
-        "url": "https://www.doctorofcredit.com/airbnb-45-bonus-for-international-stays/",
-        "parser": "airbnb_bonus"
-    },
-    {
-        "name": "Uber Referral Bonus",
-        "url": "https://www.doctorofcredit.com/uber-15-bonus-uber-eats-25/",
-        "parser": "uber_bonus"
-    },
-    {
-        "name": "Doctor of Credit (Referral)",
-        "url": "https://www.doctorofcredit.com/category/referral-bonuses/",
-        "parser": "doc_referral"
-    },
-    {
-        "name": "DoorDash Referral Bonus",
-        "url": "https://www.doctorofcredit.com/doordash-10-off/",
-        "parser": "doordash_bonus"
-    }
-],
-
-"retail": [
-    {
-        "name": "Rakuten Cashback",
-        "url": "https://www.doctorofcredit.com/rakuten-30-bonus/",
-        "parser": "rakuten_bonus"
-    },
-    {
-        "name": "Honey (PayPal) Cashback",
-        "url": "https://www.doctorofcredit.com/honey-10-bonus/",
-        "parser": "honey_bonus"
-    },
-    {
-        "name": "Doctor of Credit (Retail/Cashback)",
-        "url": "https://www.doctorofcredit.com/category/cashback-portals/",
-        "parser": "doc_retail"
-    }
-],
-
-"travel": [
-    {
-        "name": "Delta SkyMiles Bonus",
-        "url": "https://www.doctorofcredit.com/delta-skymiles-50000-bonus/",
-        "parser": "delta_bonus"
-    },
-    {
-        "name": "Marriott Bonvoy Bonus",
-        "url": "https://www.doctorofcredit.com/marriott-bonvoy-50000-bonus/",
-        "parser": "marriott_bonus"
-    },
-    {
-        "name": "Doctor of Credit (Travel)",
-        "url": "https://www.doctorofcredit.com/category/travel-2/",
-        "parser": "doc_travel"
-    }
-],
-
-"survey": [
-    {
-        "name": "Swagbucks Signup Bonus",
-        "url": "https://www.doctorofcredit.com/swagbucks-10-bonus/",
-        "parser": "swagbucks_bonus"
-    },
-    {
-        "name": "Survey Junkie Bonus",
-        "url": "https://www.doctorofcredit.com/survey-junkie-5-bonus/",
-        "parser": "survey_junkie_bonus"
-    },
-    {
-        "name": "Doctor of Credit (Surveys/GPT)",
-        "url": "https://www.doctorofcredit.com/category/surveys-gpt/",
-        "parser": "doc_survey"
-    }
-],
+    "investment": [
+        {
+            "name": "Robinhood $100/$500 Bonus",
+            "url": "https://www.doctorofcredit.com/robinhood-500-bonus/",
+            "parser": "robinhood_bonus"
+        },
+        {
+            "name": "Webull $1500+ Bonus",
+            "url": "https://www.doctorofcredit.com/webull-5000-bonus/",
+            "parser": "webull_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Investment)",
+            "url": "https://www.doctorofcredit.com/category/investment-brokerage/",
+            "parser": "doc_investment"
+        }
+    ],
+    "referral": [
+        {
+            "name": "Airbnb Referral Bonus",
+            "url": "https://www.doctorofcredit.com/airbnb-45-bonus-for-international-stays/",
+            "parser": "airbnb_bonus"
+        },
+        {
+            "name": "Uber Referral Bonus",
+            "url": "https://www.doctorofcredit.com/uber-15-bonus-uber-eats-25/",
+            "parser": "uber_bonus"
+        },
+        {
+            "name": "DoorDash Referral Bonus",
+            "url": "https://www.doctorofcredit.com/doordash-10-off/",
+            "parser": "doordash_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Referral)",
+            "url": "https://www.doctorofcredit.com/category/referral-bonuses/",
+            "parser": "doc_referral"
+        }
+    ],
+    "retail": [
+        {
+            "name": "Rakuten Cashback",
+            "url": "https://www.doctorofcredit.com/rakuten-30-bonus/",
+            "parser": "rakuten_bonus"
+        },
+        {
+            "name": "Honey (PayPal) Cashback",
+            "url": "https://www.doctorofcredit.com/honey-10-bonus/",
+            "parser": "honey_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Retail/Cashback)",
+            "url": "https://www.doctorofcredit.com/category/cashback-portals/",
+            "parser": "doc_retail"
+        }
+    ],
+    "travel": [
+        {
+            "name": "Delta SkyMiles Bonus",
+            "url": "https://www.doctorofcredit.com/delta-skymiles-50000-bonus/",
+            "parser": "delta_bonus"
+        },
+        {
+            "name": "Marriott Bonvoy Bonus",
+            "url": "https://www.doctorofcredit.com/marriott-bonvoy-50000-bonus/",
+            "parser": "marriott_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Travel)",
+            "url": "https://www.doctorofcredit.com/category/travel-2/",
+            "parser": "doc_travel"
+        }
+    ],
+    "survey": [
+        {
+            "name": "Swagbucks Signup Bonus",
+            "url": "https://www.doctorofcredit.com/swagbucks-10-bonus/",
+            "parser": "swagbucks_bonus"
+        },
+        {
+            "name": "Survey Junkie Bonus",
+            "url": "https://www.doctorofcredit.com/survey-junkie-5-bonus/",
+            "parser": "survey_junkie_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Surveys/GPT)",
+            "url": "https://www.doctorofcredit.com/category/surveys-gpt/",
+            "parser": "doc_survey"
+        }
+    ],
     "crypto": [
-    {
-        "name": "OKX Up to $10,000 Welcome Bonus",
-        "url": "https://www.doctorofcredit.com/okx-crypto-exchange-review-bonus/",
-        "parser": "okx_bonus"
-    },
-    {
-        "name": "Coinbase Up to $200 Crypto Bonus",
-        "url": "https://www.doctorofcredit.com/coinbase-review-bonus/",
-        "parser": "coinbase_bonus"
-    },
-    {
-        "name": "Bitget $5,000 Trial Fund + Rebates",
-        "url": "https://www.doctorofcredit.com/bitget-crypto-exchange-review-bonus/",
-        "parser": "bitget_bonus"
-    },
-    {
-        "name": "Kraken 3% Deposit Match",
-        "url": "https://www.doctorofcredit.com/kraken-3-cash-crypto-deposit-match-18-month-hold/",
-        "parser": "kraken_bonus"
-    },
-    {
-        "name": "MEXC Referral Ambassador Program",
-        "url": "https://www.mexc.com/en-TR/announcements/article/mexc-launches-the-referral-ambassador-program-17827791531306",
-        "parser": "mexc_bonus",
-        "dynamic": True
-    },
-    {
-        "name": "HTX New Funds Bonus Trial",
-        "url": "https://www.htx.com/support/55024606728745",
-        "parser": "htx_bonus",
-        "dynamic": True
-    },
-    {
-        "name": "Crypto.com VIP Referral Program",
-        "url": "https://crypto.com/sg/product-news/exchange-vip-referral-program",
-        "parser": "cryptocom_bonus",
-        "dynamic": True
-    },
-    {
-        "name": "Bybit $1,000,000 Boost Battle",
-        "url": "https://announcements.bybit.com/article/boost-battle-x-tmgp-2026-series-1-trade-daily-grab-your-share-of-the-1-000-000-usdt-prize-pool--blt353d08203eb770b9/",
-        "parser": "bybit_bonus",
-        "dynamic": True
-    }
-]
+        {
+            "name": "OKX Up to $10,000 Welcome Bonus",
+            "url": "https://www.doctorofcredit.com/okx-crypto-exchange-review-bonus/",
+            "parser": "okx_bonus"
+        },
+        {
+            "name": "Coinbase Up to $200 Crypto Bonus",
+            "url": "https://www.doctorofcredit.com/coinbase-review-bonus/",
+            "parser": "coinbase_bonus"
+        },
+        {
+            "name": "Bitget $5,000 Trial Fund + Rebates",
+            "url": "https://www.doctorofcredit.com/bitget-crypto-exchange-review-bonus/",
+            "parser": "bitget_bonus"
+        },
+        {
+            "name": "Kraken 3% Deposit Match",
+            "url": "https://www.doctorofcredit.com/kraken-3-cash-crypto-deposit-match-18-month-hold/",
+            "parser": "kraken_bonus"
+        }
+        # The following official exchange pages are commented out because they are often blocked.
+        # {
+        #     "name": "MEXC Referral Ambassador Program",
+        #     "url": "https://www.mexc.com/en-TR/announcements/article/mexc-launches-the-referral-ambassador-program-17827791531306",
+        #     "parser": "mexc_bonus",
+        #     "dynamic": True
+        # },
+        # {
+        #     "name": "HTX New Funds Bonus Trial",
+        #     "url": "https://www.htx.com/support/55024606728745",
+        #     "parser": "htx_bonus",
+        #     "dynamic": True
+        # },
+        # {
+        #     "name": "Crypto.com VIP Referral Program",
+        #     "url": "https://crypto.com/sg/product-news/exchange-vip-referral-program",
+        #     "parser": "cryptocom_bonus",
+        #     "dynamic": True
+        # },
+        # {
+        #     "name": "Bybit $1,000,000 Boost Battle",
+        #     "url": "https://announcements.bybit.com/article/boost-battle-x-tmgp-2026-series-1-trade-daily-grab-your-share-of-the-1-000-000-usdt-prize-pool--blt353d08203eb770b9/",
+        #     "parser": "bybit_bonus",
+        #     "dynamic": True
+        # }
+    ]
 }
 
 # ======================== PARSERS MAP ========================
@@ -1001,10 +1000,10 @@ PARSERS = {
     "coinbase_bonus": parse_coinbase_bonus,
     "bitget_bonus": parse_bitget_bonus,
     "kraken_bonus": parse_kraken_bonus,
-    "mexc_bonus": parse_mexc_bonus,
-    "htx_bonus": parse_htx_bonus,
-    "cryptocom_bonus": parse_cryptocom_bonus,
-    "bybit_bonus": parse_bybit_bonus,
+    # "mexc_bonus": parse_mexc_bonus,  # temporarily disabled
+    # "htx_bonus": parse_htx_bonus,
+    # "cryptocom_bonus": parse_cryptocom_bonus,
+    # "bybit_bonus": parse_bybit_bonus,
     "mse_uk_switch": parse_mse_uk_switch,
     "nerdwallet_bank": parse_nerdwallet_bank,
     "coinbase": parse_coinbase,
