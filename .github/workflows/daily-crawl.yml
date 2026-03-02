@@ -2,13 +2,9 @@ name: Daily Bonus Crawl
 
 on:
   schedule:
-    # Run every 4 hours (6 times per day)
     - cron: '0 */4 * * *'
-  
-  # Allow manual triggers
   workflow_dispatch:
 
-# Give the workflow permission to write to the repository
 permissions:
   contents: write
 
@@ -17,8 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
@@ -28,15 +23,13 @@ jobs:
           python-version: '3.11'
       
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
       
       - name: Install Playwright browsers
         run: playwright install chromium
       
       - name: Run crawler
-        run: |
-          python crawler.py
+        run: python crawler.py
       
       - name: Verify output
         run: |
@@ -44,43 +37,43 @@ jobs:
             echo "❌ Error: bonuses.json not generated"
             exit 1
           fi
-          
-          # Check file size (should be > 1KB)
           size=$(wc -c < "output/bonuses.json")
           if [ $size -lt 1024 ]; then
             echo "❌ Error: bonuses.json too small ($size bytes)"
             exit 1
           fi
-          
           echo "✅ bonuses.json generated successfully ($size bytes)"
       
-      # 📁 Copy to docs folder for GitHub Pages – relies on pre‑committed HTML files
-      - name: Copy to docs folder for GitHub Pages
+      # 📁 Prepare GitHub Pages folder (always copy JSON first)
+      - name: Prepare docs folder
         run: |
-          # Create docs/data directory
           mkdir -p docs/data
-          
-          # Copy bonuses.json to docs folder
           cp output/bonuses.json docs/data/bonuses.json
+          echo "✅ Copied bonuses.json to docs/data/"
+      
+      # 🌐 Copy HTML files if they exist (don't fail if missing)
+      - name: Copy HTML files (optional)
+        run: |
+          if [ -f "github-pages/root-index.html" ]; then
+            cp github-pages/root-index.html docs/index.html
+            echo "✅ Copied root index.html"
+          else
+            echo "⚠️ github-pages/root-index.html not found, skipping"
+          fi
           
-          # Copy the pre‑committed HTML files (must exist, otherwise this step fails)
-          cp github-pages/root-index.html docs/index.html
-          cp github-pages/data-index.html docs/data/index.html
-          
-          echo "✅ GitHub Pages folder prepared"
+          if [ -f "github-pages/data-index.html" ]; then
+            cp github-pages/data-index.html docs/data/index.html
+            echo "✅ Copied data index.html"
+          else
+            echo "⚠️ github-pages/data-index.html not found, skipping"
+          fi
       
       - name: Commit and push results
         run: |
           git config user.name "Bato Crawler Bot"
           git config user.email "bot@bato.market"
-          
-          # Remove root bonuses.json if it exists (old location)
           git rm --ignore-unmatch bonuses.json
-          
-          # Add generated file and docs folder
           git add output/bonuses.json docs/
-          
-          # Only commit if there are changes
           git diff --quiet && git diff --staged --quiet || {
             git commit -m "🤖 Update bonuses data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
             git push
