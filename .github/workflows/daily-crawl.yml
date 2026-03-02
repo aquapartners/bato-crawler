@@ -1,38 +1,90 @@
-name: Daily Bonus Crawl (Fallback)
+name: Daily Bonus Crawl
+
 on:
   schedule:
-    - cron: '*/15 * * * *'  # every 15 minutes
+    # Run every 4 hours (6 times per day)
+    - cron: '0 */4 * * *'
+  
+  # Allow manual triggers
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# Give the workflow permission to write to the repository
+permissions:
+  contents: write
 
 jobs:
-  update-version:
+  crawl-and-publish:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0
-
-      - name: Get latest version from DHT (simulated)
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
         run: |
-          # In a real implementation, you might query a public DHT node.
-          # For now, we'll just increment a local version file.
-          # This file can be used by clients as a fallback.
-          VERSION_FILE="version.txt"
-          if [ -f "$VERSION_FILE" ]; then
-            CURRENT_VERSION=$(cat $VERSION_FILE)
-            NEW_VERSION=$((CURRENT_VERSION + 1))
-          else
-            NEW_VERSION=1
+          pip install -r requirements.txt
+      
+      - name: Run crawler
+        run: |
+          python crawler.py
+        env:
+          # Add any API keys as secrets if needed
+          # COINBASE_API_KEY: ${{ secrets.COINBASE_API_KEY }}
+          pass
+      
+      - name: Verify output
+        run: |
+          if [ ! -f "output/bonuses.json" ]; then
+            echo "❌ Error: bonuses.json not generated"
+            exit 1
           fi
-          echo $NEW_VERSION > $VERSION_FILE
-          echo "New version: $NEW_VERSION"
-
-      - name: Commit and push if changed
-        uses: stefanzweifel/git-auto-commit-action@v5
+          
+          # Check file size (should be > 1KB)
+          size=$(wc -c < "output/bonuses.json")
+          if [ $size -lt 1024 ]; then
+            echo "❌ Error: bonuses.json too small ($size bytes)"
+            exit 1
+          fi
+          
+          echo "✅ bonuses.json generated successfully ($size bytes)"
+      
+      - name: Commit and push results
+        run: |
+          git config user.name "Bato Crawler Bot"
+          git config user.email "bot@bato.market"
+          
+          # Add generated file
+          git add output/bonuses.json
+          
+          # Only commit if there are changes
+          git diff --quiet && git diff --staged --quiet || {
+            git commit -m "🤖 Update bonuses data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push
+          }
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          commit_message: "Update version.txt [skip ci]"
-          file_pattern: version.txt
+          name: bonuses-data
+          path: output/bonuses.json
+          retention-days: 30
+      
+      - name: Display summary
+        run: |
+          echo "📊 Crawl Summary:"
+          python -c "
+          import json
+          with open('output/bonuses.json') as f:
+              data = json.load(f)
+          print(f\"  Total bonuses: {data['bonusCount']}\")
+          print(f\"  Categories: {', '.join(data['categories'])}\")
+          print(f\"  Total value: \${data['meta']['totalValue']:,}\")
+          print(f\"  Last updated: {data['lastUpdated']}\")
+          "
