@@ -1,51 +1,38 @@
-name: Daily Bonus Crawl
+name: Daily Bonus Crawl (Fallback)
 on:
   schedule:
-    - cron: '*/15 * * * *' # runs every 5 minutes
-  workflow_dispatch:       # allow manual run
+    - cron: '*/15 * * * *'  # every 15 minutes
+  workflow_dispatch:
 
-# Prevent multiple runs from conflicting
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  crawl:
+  update-version:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
-          fetch-depth: 0                # fetch full history for rebasing
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      - name: Configure git
+      - name: Get latest version from DHT (simulated)
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-
-      - name: Pull latest changes
-        run: git pull --rebase origin ${{ github.ref_name }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install requests beautifulsoup4 crawl4ai playwright
-
-      - name: Install Playwright browsers
-        run: playwright install chromium
-
-      - name: Run crawler
-        run: python crawler.py
+          # In a real implementation, you might query a public DHT node.
+          # For now, we'll just increment a local version file.
+          # This file can be used by clients as a fallback.
+          VERSION_FILE="version.txt"
+          if [ -f "$VERSION_FILE" ]; then
+            CURRENT_VERSION=$(cat $VERSION_FILE)
+            NEW_VERSION=$((CURRENT_VERSION + 1))
+          else
+            NEW_VERSION=1
+          fi
+          echo $NEW_VERSION > $VERSION_FILE
+          echo "New version: $NEW_VERSION"
 
       - name: Commit and push if changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update bonuses.json [skip ci]"
-          file_pattern: bonuses.json
-          commit_user_name: github-actions
-          commit_user_email: github-actions@github.com
-          commit_author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          commit_message: "Update version.txt [skip ci]"
+          file_pattern: version.txt
