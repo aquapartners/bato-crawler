@@ -54,7 +54,7 @@ jobs:
           
           echo "✅ bonuses.json generated successfully ($size bytes)"
       
-      # 🆕 Copy to docs folder for GitHub Pages
+      # 🆕 Copy to docs folder for GitHub Pages (without heredocs)
       - name: Copy to docs folder for GitHub Pages
         run: |
           # Create docs/data directory
@@ -63,7 +63,7 @@ jobs:
           # Copy bonuses.json to docs folder
           cp output/bonuses.json docs/data/bonuses.json
           
-          # Create an index.html redirect at root
+          # Create root index.html redirect (using echo lines)
           cat > docs/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
@@ -78,7 +78,7 @@ jobs:
           </html>
           EOF
           
-          # Create a pretty data browser page
+          # Create data browser page (using echo lines)
           cat > docs/data/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
