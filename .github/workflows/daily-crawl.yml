@@ -54,7 +54,7 @@ jobs:
           
           echo "✅ bonuses.json generated successfully ($size bytes)"
       
-      # 🆕 Copy to docs folder for GitHub Pages
+      # 📁 Copy to docs folder for GitHub Pages – relies on pre‑committed HTML files
       - name: Copy to docs folder for GitHub Pages
         run: |
           # Create docs/data directory
@@ -63,20 +63,9 @@ jobs:
           # Copy bonuses.json to docs folder
           cp output/bonuses.json docs/data/bonuses.json
           
-          # Copy the pre‑committed HTML files if they exist
-          if [ -f "github-pages/root-index.html" ]; then
-            cp github-pages/root-index.html docs/index.html
-            echo "✅ Copied root index.html"
-          else
-            echo "⚠️ github-pages/root-index.html not found, skipping"
-          fi
-          
-          if [ -f "github-pages/data-index.html" ]; then
-            cp github-pages/data-index.html docs/data/index.html
-            echo "✅ Copied data index.html"
-          else
-            echo "⚠️ github-pages/data-index.html not found, skipping"
-          fi
+          # Copy the pre‑committed HTML files (must exist, otherwise this step fails)
+          cp github-pages/root-index.html docs/index.html
+          cp github-pages/data-index.html docs/data/index.html
           
           echo "✅ GitHub Pages folder prepared"
       
@@ -84,6 +73,9 @@ jobs:
         run: |
           git config user.name "Bato Crawler Bot"
           git config user.email "bot@bato.market"
+          
+          # Remove root bonuses.json if it exists (old location)
+          git rm --ignore-unmatch bonuses.json
           
           # Add generated file and docs folder
           git add output/bonuses.json docs/
