@@ -30,17 +30,13 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-
+      
       - name: Install Playwright browsers
         run: playwright install chromium
       
       - name: Run crawler
         run: |
           python crawler.py
-        env:
-          # Add any API keys as secrets if needed
-          # COINBASE_API_KEY: ${{ secrets.COINBASE_API_KEY }}
-          pass
       
       - name: Verify output
         run: |
