@@ -1,5 +1,2 @@
-requests
-beautifulsoup4
-lxml
-crawl4ai>=0.6.3
-playwright>=1.40.0
+# No Python dependencies required – the crawler is now in JavaScript.
+# This file is kept for historical reasons.
