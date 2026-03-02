@@ -180,7 +180,6 @@ def parse_common_bonus(text, source_url, category):
     }
 
 # ======================== BANK PARSERS ========================
-# (All your existing parser functions – unchanged)
 def parse_doc_bank(html, source_url):
     """Parse Doctor of Credit bank bonuses page."""
     soup = BeautifulSoup(html, 'html.parser')
@@ -209,7 +208,6 @@ def parse_chase(html, source_url):
     """Parse Chase $400 checking bonus."""
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
-    # Extract from Doctor of Credit or direct page – simplified
     full_text = soup.get_text()
     if '$400' in full_text and 'Chase' in full_text:
         bonus = parse_common_bonus("Chase $400 checking bonus with $1,500 direct deposit within 90 days", source_url, "bank")
@@ -680,6 +678,22 @@ def parse_doc_survey(html, source_url):
     print(f"  Doctor of Credit (Survey): found {len(bonuses)} bonuses")
     return bonuses
 
+# ======================== REAL ESTATE PARSERS ========================
+def parse_zillow_bonus(html, source_url):
+    """Parse Zillow referral bonus."""
+    # TODO: Implement actual parsing for Zillow
+    return []
+
+def parse_redfin_bonus(html, source_url):
+    """Parse Redfin referral bonus."""
+    # TODO: Implement actual parsing for Redfin
+    return []
+
+def parse_realtor_bonus(html, source_url):
+    """Parse Realtor.com referral bonus."""
+    # TODO: Implement actual parsing for Realtor.com
+    return []
+
 # ======================== OTHER PLACEHOLDERS ========================
 def parse_mse_uk_switch(html, source_url):
     return []
@@ -745,9 +759,249 @@ SOURCES = {
             "url": "https://www.doctorofcredit.com/chase-300-checking-bonus-2/",
             "parser": "chase"
         },
-        # ... (all other sources remain the same)
+        {
+            "name": "Bank of America $500 Checking",
+            "url": "https://www.doctorofcredit.com/bank-of-america-100-200-300-checking-bonus/",
+            "parser": "bofa"
+        },
+        {
+            "name": "Wells Fargo $325 Checking",
+            "url": "https://www.doctorofcredit.com/wells-fargo-325-checking-bonus/",
+            "parser": "wells_fargo"
+        },
+        {
+            "name": "Citibank $325 Checking",
+            "url": "https://www.doctorofcredit.com/citibank-325-checking-bonus/",
+            "parser": "citibank"
+        },
+        {
+            "name": "Capital One $250 Checking",
+            "url": "https://www.doctorofcredit.com/capital-one-250-checking-bonus/",
+            "parser": "capital_one"
+        },
+        {
+            "name": "U.S. Bank $250-$450 Checking",
+            "url": "https://www.doctorofcredit.com/u-s-bank-250-350-450-checking-bonus/",
+            "parser": "us_bank"
+        },
+        {
+            "name": "PNC $100/$400 Checking",
+            "url": "https://www.doctorofcredit.com/pnc-200-300-400-checking-bonus/",
+            "parser": "pnc"
+        },
+        {
+            "name": "TD Bank $200/$300 Checking",
+            "url": "https://www.doctorofcredit.com/td-bank-200-300-checking-bonus/",
+            "parser": "td_bank"
+        },
+        {
+            "name": "Penn Community Bank $400 (PA/NJ)",
+            "url": "https://www.doctorofcredit.com/pa-only-penn-community-bank-350-checking-bonus-50-savings-direct-deposit-not-required/",
+            "parser": "penn_community_bank"
+        },
+        {
+            "name": "Truist $400 Checking",
+            "url": "https://www.doctorofcredit.com/truist-300-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
+            "parser": "truist_doc"
+        }
     ],
-    # ... (all other categories)
+    "business_checking": [
+        {
+            "name": "Truist Business $400",
+            "url": "https://www.doctorofcredit.com/truist-200-business-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
+            "parser": "truist_business"
+        },
+        {
+            "name": "First Commonwealth $300-$500 Business",
+            "url": "https://www.doctorofcredit.com/24736-2/",
+            "parser": "first_commonwealth_business"
+        },
+        {
+            "name": "Union Savings Bank Business $305/$506",
+            "url": "https://www.doctorofcredit.com/ct-only-union-savings-bank-250-500-business-checking-bonus/",
+            "parser": "union_savings_business"
+        },
+        {
+            "name": "Golden 1 Credit Union $300 Business",
+            "url": "https://www.doctorofcredit.com/ca-in-branch-only-golden-1-credit-union-300-business-checking-bonus/",
+            "parser": "golden1_business"
+        }
+    ],
+    "credit_union": [
+        {
+            "name": "PenFed $300/$225 Checking",
+            "url": "https://www.doctorofcredit.com/ymmv-penfed-300-checking-bonus/",
+            "parser": "penfed"
+        },
+        {
+            "name": "BECU $500 Checking",
+            "url": "https://www.doctorofcredit.com/wa-id-or-only-becu-400-checking-bonus/",
+            "parser": "becu"
+        },
+        {
+            "name": "Mountain America $150 Checking",
+            "url": "https://www.doctorofcredit.com/ut-id-nv-nm-mt-az-mountain-america-credit-union-150-checking-bonus/",
+            "parser": "mountain_america"
+        },
+        {
+            "name": "Alliant Credit Union $150 (Rakuten)",
+            "url": "https://www.doctorofcredit.com/rakuten-alliant-credit-union-100-10000-checking-bonus/",
+            "parser": "alliant_rakuten"
+        }
+    ],
+    "investment": [
+        {
+            "name": "Robinhood $100/$500 Bonus",
+            "url": "https://www.doctorofcredit.com/robinhood-500-bonus/",
+            "parser": "robinhood_bonus"
+        },
+        {
+            "name": "Webull $1500+ Bonus",
+            "url": "https://www.doctorofcredit.com/webull-5000-bonus/",
+            "parser": "webull_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Investment)",
+            "url": "https://www.doctorofcredit.com/category/investment-brokerage/",
+            "parser": "doc_investment"
+        }
+    ],
+    "referral": [
+        {
+            "name": "Airbnb Referral Bonus",
+            "url": "https://www.doctorofcredit.com/airbnb-45-bonus-for-international-stays/",
+            "parser": "airbnb_bonus"
+        },
+        {
+            "name": "Uber Referral Bonus",
+            "url": "https://www.doctorofcredit.com/uber-15-bonus-uber-eats-25/",
+            "parser": "uber_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Referral)",
+            "url": "https://www.doctorofcredit.com/category/referral-bonuses/",
+            "parser": "doc_referral"
+        },
+        {
+            "name": "DoorDash Referral Bonus",
+            "url": "https://www.doctorofcredit.com/doordash-10-off/",
+            "parser": "doordash_bonus"
+        }
+    ],
+    "retail": [
+        {
+            "name": "Rakuten Cashback",
+            "url": "https://www.doctorofcredit.com/rakuten-30-bonus/",
+            "parser": "rakuten_bonus"
+        },
+        {
+            "name": "Honey (PayPal) Cashback",
+            "url": "https://www.doctorofcredit.com/honey-10-bonus/",
+            "parser": "honey_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Retail/Cashback)",
+            "url": "https://www.doctorofcredit.com/category/cashback-portals/",
+            "parser": "doc_retail"
+        }
+    ],
+    "travel": [
+        {
+            "name": "Delta SkyMiles Bonus",
+            "url": "https://www.doctorofcredit.com/delta-skymiles-50000-bonus/",
+            "parser": "delta_bonus"
+        },
+        {
+            "name": "Marriott Bonvoy Bonus",
+            "url": "https://www.doctorofcredit.com/marriott-bonvoy-50000-bonus/",
+            "parser": "marriott_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Travel)",
+            "url": "https://www.doctorofcredit.com/category/travel-2/",
+            "parser": "doc_travel"
+        }
+    ],
+    "survey": [
+        {
+            "name": "Swagbucks Signup Bonus",
+            "url": "https://www.doctorofcredit.com/swagbucks-10-bonus/",
+            "parser": "swagbucks_bonus"
+        },
+        {
+            "name": "Survey Junkie Bonus",
+            "url": "https://www.doctorofcredit.com/survey-junkie-5-bonus/",
+            "parser": "survey_junkie_bonus"
+        },
+        {
+            "name": "Doctor of Credit (Surveys/GPT)",
+            "url": "https://www.doctorofcredit.com/category/surveys-gpt/",
+            "parser": "doc_survey"
+        }
+    ],
+    "crypto": [
+        {
+            "name": "OKX Up to $10,000 Welcome Bonus",
+            "url": "https://www.doctorofcredit.com/okx-crypto-exchange-review-bonus/",
+            "parser": "okx_bonus"
+        },
+        {
+            "name": "Coinbase Up to $200 Crypto Bonus",
+            "url": "https://www.doctorofcredit.com/coinbase-review-bonus/",
+            "parser": "coinbase_bonus"
+        },
+        {
+            "name": "Bitget $5,000 Trial Fund + Rebates",
+            "url": "https://www.doctorofcredit.com/bitget-crypto-exchange-review-bonus/",
+            "parser": "bitget_bonus"
+        },
+        {
+            "name": "Kraken 3% Deposit Match",
+            "url": "https://www.doctorofcredit.com/kraken-3-cash-crypto-deposit-match-18-month-hold/",
+            "parser": "kraken_bonus"
+        },
+        {
+            "name": "MEXC Referral Ambassador Program",
+            "url": "https://www.mexc.com/en-TR/announcements/article/mexc-launches-the-referral-ambassador-program-17827791531306",
+            "parser": "mexc_bonus",
+            "dynamic": True
+        },
+        {
+            "name": "HTX New Funds Bonus Trial",
+            "url": "https://www.htx.com/support/55024606728745",
+            "parser": "htx_bonus",
+            "dynamic": True
+        },
+        {
+            "name": "Crypto.com VIP Referral Program",
+            "url": "https://crypto.com/sg/product-news/exchange-vip-referral-program",
+            "parser": "cryptocom_bonus",
+            "dynamic": True
+        },
+        {
+            "name": "Bybit $1,000,000 Boost Battle",
+            "url": "https://announcements.bybit.com/article/boost-battle-x-tmgp-2026-series-1-trade-daily-grab-your-share-of-the-1-000-000-usdt-prize-pool--blt353d08203eb770b9/",
+            "parser": "bybit_bonus",
+            "dynamic": True
+        }
+    ],
+    "real_estate": [
+        {
+            "name": "Zillow Referral Bonus",
+            "url": "https://www.zillow.com/referral/",  # Placeholder URL
+            "parser": "zillow_bonus"
+        },
+        {
+            "name": "Redfin Referral Bonus",
+            "url": "https://www.redfin.com/referral/",  # Placeholder URL
+            "parser": "redfin_bonus"
+        },
+        {
+            "name": "Realtor.com Referral Bonus",
+            "url": "https://www.realtor.com/referral/",  # Placeholder URL
+            "parser": "realtor_bonus"
+        }
+    ]
 }
 
 # ======================== PARSERS MAP ========================
@@ -812,6 +1066,9 @@ PARSERS = {
     "doc_retail": parse_doc_retail,
     "doc_travel": parse_doc_travel,
     "doc_survey": parse_doc_survey,
+    "zillow_bonus": parse_zillow_bonus,
+    "redfin_bonus": parse_redfin_bonus,
+    "realtor_bonus": parse_realtor_bonus,
 }
 
 # ======================== NEW FUNCTIONS FOR FRONTEND OUTPUT ========================
@@ -870,16 +1127,14 @@ def transform_bonus(old_bonus):
     if category in ('bank', 'business_checking', 'credit_union'):
         new_bonus["bank"] = old_bonus.get('bank', '')
         new_bonus["accountType"] = old_bonus.get('account_type', 'checking')
-    elif category in ('crypto', 'investment', 'referral', 'retail', 'travel', 'survey'):
-        # Use platform if available, otherwise bank
+    elif category in ('crypto', 'investment', 'referral', 'retail', 'travel', 'survey', 'real_estate'):
         platform = old_bonus.get('bank') or old_bonus.get('platform') or 'unknown'
         new_bonus["platform"] = platform
-        # For crypto, add cryptoType if we can infer
         if category == 'crypto':
             new_bonus["cryptoType"] = old_bonus.get('account_type', 'trading')
         elif category == 'investment':
             new_bonus["investmentType"] = old_bonus.get('account_type', 'stocks')
-        # etc.
+        # For real_estate, treat like referral – no extra field needed
 
     # Add geographic restrictions as tags or separate field
     if old_bonus.get('geographic_restrictions'):
