@@ -279,280 +279,562 @@
       font-weight: 600;
       color: var(--text-primary);
     }
+
+    /* ===== TEST PAGE STYLES ===== */
+    .test-panel {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: var(--shadow-standard);
+    }
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .test-button {
+      padding: 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg-gray-100);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+    .test-button:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      border-color: var(--border-focus);
+    }
+    .test-button.danger { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .test-button.warning { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+    .test-button.success { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+    .log-console {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: 'Monaco', 'Menlo', monospace;
+      padding: 1rem;
+      border-radius: 8px;
+      height: 200px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      margin: 1rem 0;
+    }
+    .log-entry {
+      margin: 2px 0;
+      padding: 2px 0;
+      border-bottom: 1px solid #333;
+    }
+    .log-error { color: #f87171; }
+    .log-warning { color: #fbbf24; }
+    .log-info { color: #60a5fa; }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    .summary-table th, .summary-table td {
+      padding: 0.5rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-default);
+    }
+    .summary-table th {
+      background: var(--bg-gray-100);
+      font-weight: 600;
+    }
+    .health-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+    .health-healthy { background: var(--green); }
+    .health-warning { background: #fbbf24; }
+    .health-critical { background: var(--red); }
+    .error-boundary-fallback {
+      background: #fee2e2;
+      border: 2px solid #fecaca;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- ===== HEADER WITH GRADIENT ===== -->
-    <div class="gradient-primary rounded-2xl p-6 text-white shadow-card mb-6">
-      <div class="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 class="text-3xl font-bold flex items-center gap-2">
-            <span>🏦</span> Bato Bonus Dashboard
-          </h1>
-          <p class="text-purple-100 text-sm mt-1">
-            Real‑time bank bonuses • Updated every 4 hours
-          </p>
-        </div>
-        <div class="flex gap-2">
-          <button class="btn-secondary text-white" id="refreshBtn">⟳ Refresh</button>
-        </div>
-      </div>
-
-      <!-- Stats Cards (filled via JS) -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-        <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold" id="statBonuses">-</div>
-          <div class="text-xs text-purple-100">Total Bonuses</div>
-        </div>
-        <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold" id="statValue">-</div>
-          <div class="text-xs text-purple-100">Total Value</div>
-        </div>
-        <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold" id="statCategories">-</div>
-          <div class="text-xs text-purple-100">Categories</div>
-        </div>
-        <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold" id="statAvg">-</div>
-          <div class="text-xs text-purple-100">Avg Bonus</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== FILTER PANEL ===== -->
-    <div class="bg-white rounded-2xl p-4 shadow-card mb-6">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex flex-wrap gap-2">
-          <!-- Category filters (dynamically created) -->
-          <span class="text-sm text-secondary font-medium mr-2">Category:</span>
-          <div id="categoryFilters" class="flex flex-wrap gap-2"></div>
-        </div>
-        <div class="flex gap-2">
-          <select id="sortSelect" class="border border-default rounded-lg px-3 py-2 text-sm focus:border-focus focus:ring-2 focus:ring-purple-200 outline-none">
-            <option value="amountDesc">💰 Bonus (high to low)</option>
-            <option value="amountAsc">💰 Bonus (low to high)</option>
-            <option value="bank">🏛️ Bank name</option>
-            <option value="difficulty">🎯 Difficulty</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== BONUS GRID / LOADING / ERROR ===== -->
-    <div id="contentArea">
-      <!-- Loading state -->
-      <div class="flex justify-center py-12" id="loading">
-        <div class="spinner"></div>
-      </div>
-
-      <!-- Error state (hidden initially) -->
-      <div id="error" class="hidden">
-        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-6 text-center">
-          <div class="text-5xl mb-3">😵</div>
-          <h3 class="text-xl font-bold text-red-800 mb-2">Failed to load bonuses</h3>
-          <p class="text-red-700 mb-4">The data could not be fetched. Please try again later.</p>
-          <button class="btn-primary" onclick="location.reload()">Retry</button>
-        </div>
-      </div>
-
-      <!-- Bonus grid (hidden initially) -->
-      <div id="bonusGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-    </div>
-
-    <!-- ===== FOOTER ===== -->
-    <div class="mt-8 text-center text-tertiary text-sm border-t border-default pt-6">
-      <p>🤖 Generated by <strong>Bato Crawler</strong> • Data served via GitHub Pages • <span id="lastUpdated"></span></p>
-    </div>
+  <div class="container" id="mainContainer">
+    <!-- The dashboard will be inserted here by JavaScript -->
   </div>
 
   <script>
     (function() {
-      const CDN_URL = './bonuses.json';  // relative path to JSON
+      // ========== ERROR MONITOR (simplified for static page) ==========
+      const errorMonitor = (function() {
+        let errors = [];
+        let listeners = [];
+        let stats = { error: 0, warning: 0, network: 0, sync: 0, encryption: 0, info: 0, total: 0 };
 
-      // DOM elements
-      const loadingEl = document.getElementById('loading');
-      const errorEl = document.getElementById('error');
-      const gridEl = document.getElementById('bonusGrid');
-      const categoryFiltersEl = document.getElementById('categoryFilters');
-      const sortSelect = document.getElementById('sortSelect');
-
-      // Stat elements
-      const statBonuses = document.getElementById('statBonuses');
-      const statValue = document.getElementById('statValue');
-      const statCategories = document.getElementById('statCategories');
-      const statAvg = document.getElementById('statAvg');
-      const lastUpdatedSpan = document.getElementById('lastUpdated');
-
-      // State
-      let allBonuses = [];
-      let filteredBonuses = [];
-      let categories = new Set();
-      let activeCategory = 'all';
-
-      // Fetch data
-      async function fetchData() {
+        // Load from localStorage if available
         try {
-          const resp = await fetch(CDN_URL);
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          const data = await resp.json();
-          // Expecting structure: { bonuses: [...], lastUpdated, bonusCount, meta: { totalValue } }
-          allBonuses = data.bonuses || [];
-          renderStats(data);
-          extractCategories(allBonuses);
-          applyFiltersAndSort();
-          loadingEl.classList.add('hidden');
-          gridEl.classList.remove('hidden');
-        } catch (err) {
-          console.error(err);
-          loadingEl.classList.add('hidden');
-          errorEl.classList.remove('hidden');
+          const saved = localStorage.getItem('bato_error_logs_test');
+          if (saved) errors = JSON.parse(saved);
+          const savedStats = localStorage.getItem('bato_error_stats_test');
+          if (savedStats) stats = JSON.parse(savedStats);
+        } catch (e) {}
+
+        function save() {
+          try {
+            localStorage.setItem('bato_error_logs_test', JSON.stringify(errors.slice(-100)));
+            localStorage.setItem('bato_error_stats_test', JSON.stringify(stats));
+          } catch (e) {}
         }
-      }
 
-      // Update header stats
-      function renderStats(data) {
-        const count = data.bonusCount || allBonuses.length;
-        statBonuses.textContent = count.toLocaleString();
+        function addLog(entry) {
+          entry.id = 'err_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+          entry.timestamp = new Date().toISOString();
+          errors.push(entry);
+          stats[entry.type] = (stats[entry.type] || 0) + 1;
+          stats.total++;
+          save();
+          listeners.forEach(fn => fn(entry));
+          return entry;
+        }
 
-        const total = data.meta?.totalValue || allBonuses.reduce((sum, b) => sum + (b.bonusAmount || 0), 0);
-        statValue.textContent = '$' + total.toLocaleString();
+        return {
+          logError: (msg, context = {}) => addLog({ type: 'error', message: msg, context }),
+          logWarning: (msg, context = {}) => addLog({ type: 'warning', message: msg, context }),
+          logNetworkError: (msg, context = {}) => addLog({ type: 'network', message: msg, context }),
+          logSyncError: (msg, context = {}) => addLog({ type: 'sync', message: msg, context }),
+          logEncryptionError: (msg, context = {}) => addLog({ type: 'encryption', message: msg, context }),
+          logInfo: (msg, context = {}) => addLog({ type: 'info', message: msg, context }),
+          getAllErrors: () => [...errors],
+          getStats: () => ({ ...stats }),
+          getHealthStatus: () => {
+            if (stats.error >= 5 || stats.network >= 3) return { status: 'critical', message: 'High error rate', errors: stats.error, warnings: stats.warning };
+            if (stats.error >= 2 || stats.warning >= 5) return { status: 'warning', message: 'Elevated errors', errors: stats.error, warnings: stats.warning };
+            return { status: 'healthy', message: 'All systems operational', errors: stats.error, warnings: stats.warning };
+          },
+          clear: () => {
+            errors = [];
+            stats = { error: 0, warning: 0, network: 0, sync: 0, encryption: 0, info: 0, total: 0 };
+            save();
+          },
+          onError: (fn) => {
+            listeners.push(fn);
+            return () => { listeners = listeners.filter(l => l !== fn); };
+          },
+          exportErrors: () => {
+            return JSON.stringify({ errors: errors.slice(-100), stats }, null, 2);
+          }
+        };
+      })();
 
-        const cats = new Set(allBonuses.map(b => b.category).filter(Boolean));
-        statCategories.textContent = cats.size;
+      // ========== URL PARAM DETECTION ==========
+      const urlParams = new URLSearchParams(window.location.search);
+      const isTestMode = urlParams.get('test') === 'errors';
 
-        const avg = count ? Math.round(total / count) : 0;
-        statAvg.textContent = '$' + avg.toLocaleString();
+      // ========== RENDER DASHBOARD (normal mode) ==========
+      function renderDashboard() {
+        const container = document.getElementById('mainContainer');
+        container.innerHTML = `
+          <!-- ===== HEADER WITH GRADIENT ===== -->
+          <div class="gradient-primary rounded-2xl p-6 text-white shadow-card mb-6">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h1 class="text-3xl font-bold flex items-center gap-2">
+                  <span>🏦</span> Bato Bonus Dashboard
+                </h1>
+                <p class="text-purple-100 text-sm mt-1">
+                  Real‑time bank bonuses • Updated every 4 hours
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn-secondary text-white" id="refreshBtn">⟳ Refresh</button>
+              </div>
+            </div>
 
-        lastUpdatedSpan.textContent = data.lastUpdated ? `Last updated: ${new Date(data.lastUpdated).toLocaleString()}` : '';
-      }
+            <!-- Stats Cards (filled via JS) -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold" id="statBonuses">-</div>
+                <div class="text-xs text-purple-100">Total Bonuses</div>
+              </div>
+              <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold" id="statValue">-</div>
+                <div class="text-xs text-purple-100">Total Value</div>
+              </div>
+              <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold" id="statCategories">-</div>
+                <div class="text-xs text-purple-100">Categories</div>
+              </div>
+              <div class="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold" id="statAvg">-</div>
+                <div class="text-xs text-purple-100">Avg Bonus</div>
+              </div>
+            </div>
+          </div>
 
-      // Extract unique categories for filter pills
-      function extractCategories(bonuses) {
-        categories.clear();
-        bonuses.forEach(b => {
-          if (b.category) categories.add(b.category);
-        });
-        renderCategoryFilters();
-      }
+          <!-- ===== FILTER PANEL ===== -->
+          <div class="bg-white rounded-2xl p-4 shadow-card mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div class="flex flex-wrap gap-2">
+                <!-- Category filters (dynamically created) -->
+                <span class="text-sm text-secondary font-medium mr-2">Category:</span>
+                <div id="categoryFilters" class="flex flex-wrap gap-2"></div>
+              </div>
+              <div class="flex gap-2">
+                <select id="sortSelect" class="border border-default rounded-lg px-3 py-2 text-sm focus:border-focus focus:ring-2 focus:ring-purple-200 outline-none">
+                  <option value="amountDesc">💰 Bonus (high to low)</option>
+                  <option value="amountAsc">💰 Bonus (low to high)</option>
+                  <option value="bank">🏛️ Bank name</option>
+                  <option value="difficulty">🎯 Difficulty</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
-      // Create filter pills
-      function renderCategoryFilters() {
-        const html = ['<button class="badge" data-category="all" style="background:#7C3AED; color:white;">All</button>'];
-        categories.forEach(cat => {
-          html.push(`<button class="badge bg-gray-100 text-gray-700 hover:bg-purple-100" data-category="${cat}">${cat}</button>`);
-        });
-        categoryFiltersEl.innerHTML = html.join('');
+          <!-- ===== BONUS GRID / LOADING / ERROR ===== -->
+          <div id="contentArea">
+            <!-- Loading state -->
+            <div class="flex justify-center py-12" id="loading">
+              <div class="spinner"></div>
+            </div>
 
-        // Add event listeners
-        document.querySelectorAll('[data-category]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            document.querySelectorAll('[data-category]').forEach(b => {
-              b.classList.remove('bg-purple-600', 'text-white');
-              b.classList.add('bg-gray-100', 'text-gray-700');
-            });
-            e.target.classList.remove('bg-gray-100', 'text-gray-700');
-            e.target.classList.add('bg-purple-600', 'text-white');
-            activeCategory = e.target.dataset.category;
+            <!-- Error state (hidden initially) -->
+            <div id="error" class="hidden">
+              <div class="bg-red-50 border-2 border-red-200 rounded-xl p-6 text-center">
+                <div class="text-5xl mb-3">😵</div>
+                <h3 class="text-xl font-bold text-red-800 mb-2">Failed to load bonuses</h3>
+                <p class="text-red-700 mb-4">The data could not be fetched. Please try again later.</p>
+                <button class="btn-primary" onclick="location.reload()">Retry</button>
+              </div>
+            </div>
+
+            <!-- Bonus grid (hidden initially) -->
+            <div id="bonusGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+          </div>
+
+          <!-- ===== FOOTER ===== -->
+          <div class="mt-8 text-center text-tertiary text-sm border-t border-default pt-6">
+            <p>🤖 Generated by <strong>Bato Crawler</strong> • Data served via GitHub Pages • <span id="lastUpdated"></span></p>
+          </div>
+        `;
+
+        // Dashboard functionality (same as before)
+        const CDN_URL = './bonuses.json';
+        const loadingEl = document.getElementById('loading');
+        const errorEl = document.getElementById('error');
+        const gridEl = document.getElementById('bonusGrid');
+        const categoryFiltersEl = document.getElementById('categoryFilters');
+        const sortSelect = document.getElementById('sortSelect');
+        const statBonuses = document.getElementById('statBonuses');
+        const statValue = document.getElementById('statValue');
+        const statCategories = document.getElementById('statCategories');
+        const statAvg = document.getElementById('statAvg');
+        const lastUpdatedSpan = document.getElementById('lastUpdated');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        let allBonuses = [];
+        let filteredBonuses = [];
+        let categories = new Set();
+        let activeCategory = 'all';
+
+        async function fetchData() {
+          try {
+            const resp = await fetch(CDN_URL);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            allBonuses = data.bonuses || [];
+            renderStats(data);
+            extractCategories(allBonuses);
             applyFiltersAndSort();
-          });
-        });
-      }
-
-      // Apply category filter and current sort
-      function applyFiltersAndSort() {
-        filteredBonuses = allBonuses.filter(b => activeCategory === 'all' || b.category === activeCategory);
-        sortBonuses();
-        renderGrid();
-      }
-
-      // Sort based on dropdown
-      function sortBonuses() {
-        const sortBy = sortSelect.value;
-        filteredBonuses.sort((a, b) => {
-          if (sortBy === 'amountDesc') return (b.bonusAmount || 0) - (a.bonusAmount || 0);
-          if (sortBy === 'amountAsc') return (a.bonusAmount || 0) - (b.bonusAmount || 0);
-          if (sortBy === 'bank') return (a.bank || '').localeCompare(b.bank || '');
-          if (sortBy === 'difficulty') return (a.difficulty || 5) - (b.difficulty || 5);
-          return 0;
-        });
-      }
-
-      // Render the bonus cards
-      function renderGrid() {
-        if (!filteredBonuses.length) {
-          gridEl.innerHTML = `
-            <div class="col-span-full text-center py-12">
-              <div class="text-5xl mb-3">🔍</div>
-              <h3 class="text-xl font-bold text-gray-800 mb-2">No bonuses found</h3>
-              <p class="text-gray-600">Try adjusting your filters</p>
-            </div>
-          `;
-          return;
+            loadingEl.classList.add('hidden');
+            gridEl.classList.remove('hidden');
+          } catch (err) {
+            errorMonitor.logNetworkError('Failed to load bonus data', { url: CDN_URL, error: err.message });
+            loadingEl.classList.add('hidden');
+            errorEl.classList.remove('hidden');
+          }
         }
 
-        let html = '';
-        filteredBonuses.forEach(b => {
-          const difficultyClass = 
-            b.difficulty <= 2 ? 'badge-easy' : 
-            b.difficulty <= 4 ? 'badge-medium' : 'badge-hard';
-          const difficultyLabel = 
-            b.difficulty <= 2 ? 'easy' : 
-            b.difficulty <= 4 ? 'medium' : 'hard';
+        function renderStats(data) {
+          const count = data.bonusCount || allBonuses.length;
+          statBonuses.textContent = count.toLocaleString();
+          const total = data.meta?.totalValue || allBonuses.reduce((sum, b) => sum + (b.bonusAmount || 0), 0);
+          statValue.textContent = '$' + total.toLocaleString();
+          const cats = new Set(allBonuses.map(b => b.category).filter(Boolean));
+          statCategories.textContent = cats.size;
+          const avg = count ? Math.round(total / count) : 0;
+          statAvg.textContent = '$' + avg.toLocaleString();
+          lastUpdatedSpan.textContent = data.lastUpdated ? `Last updated: ${new Date(data.lastUpdated).toLocaleString()}` : '';
+        }
 
-          // Capital needed (use min_deposit or capitalRequired)
-          const capital = b.capitalRequired || b.min_deposit || 0;
-          const capitalDisplay = capital ? `$${capital.toLocaleString()}` : 'None';
+        function extractCategories(bonuses) {
+          categories.clear();
+          bonuses.forEach(b => { if (b.category) categories.add(b.category); });
+          renderCategoryFilters();
+        }
 
-          // Tags
-          const tags = b.tags || [];
-          const tagHtml = tags.slice(0, 3).map(t => 
-            `<span class="badge bg-gray-100 text-gray-600">${t}</span>`
-          ).join('');
+        function renderCategoryFilters() {
+          const html = ['<button class="badge" data-category="all" style="background:#7C3AED; color:white;">All</button>'];
+          categories.forEach(cat => {
+            html.push(`<button class="badge bg-gray-100 text-gray-700 hover:bg-purple-100" data-category="${cat}">${cat}</button>`);
+          });
+          categoryFiltersEl.innerHTML = html.join('');
+          document.querySelectorAll('[data-category]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              document.querySelectorAll('[data-category]').forEach(b => {
+                b.classList.remove('bg-purple-600', 'text-white');
+                b.classList.add('bg-gray-100', 'text-gray-700');
+              });
+              e.target.classList.remove('bg-gray-100', 'text-gray-700');
+              e.target.classList.add('bg-purple-600', 'text-white');
+              activeCategory = e.target.dataset.category;
+              applyFiltersAndSort();
+            });
+          });
+        }
 
-          html += `
-            <div class="bonus-card">
-              <div class="flex justify-between items-start mb-2">
-                <span class="badge ${difficultyClass}">${difficultyLabel}</span>
-                <span class="badge bg-blue-100 text-blue-700">${b.category || 'bank'}</span>
+        function applyFiltersAndSort() {
+          filteredBonuses = allBonuses.filter(b => activeCategory === 'all' || b.category === activeCategory);
+          sortBonuses();
+          renderGrid();
+        }
+
+        function sortBonuses() {
+          const sortBy = sortSelect.value;
+          filteredBonuses.sort((a, b) => {
+            if (sortBy === 'amountDesc') return (b.bonusAmount || 0) - (a.bonusAmount || 0);
+            if (sortBy === 'amountAsc') return (a.bonusAmount || 0) - (b.bonusAmount || 0);
+            if (sortBy === 'bank') return (a.bank || '').localeCompare(b.bank || '');
+            if (sortBy === 'difficulty') return (a.difficulty || 5) - (b.difficulty || 5);
+            return 0;
+          });
+        }
+
+        function renderGrid() {
+          if (!filteredBonuses.length) {
+            gridEl.innerHTML = `
+              <div class="col-span-full text-center py-12">
+                <div class="text-5xl mb-3">🔍</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">No bonuses found</h3>
+                <p class="text-gray-600">Try adjusting your filters</p>
               </div>
-              <div class="bonus-amount">$${b.bonusAmount?.toLocaleString()}</div>
-              <div class="bonus-bank mt-1">${b.bank || b.platform || 'Unknown'}</div>
-              <p class="text-sm text-secondary mt-2 line-clamp-2" title="${b.requirements || ''}">
-                ${b.requirements || 'No requirements listed'}
-              </p>
-              ${capital ? `
-                <div class="capital-box">
-                  <div class="label">Capital Needed</div>
-                  <div class="value">$${capital.toLocaleString()}</div>
+            `;
+            return;
+          }
+
+          let html = '';
+          filteredBonuses.forEach(b => {
+            const difficultyClass = b.difficulty <= 2 ? 'badge-easy' : b.difficulty <= 4 ? 'badge-medium' : 'badge-hard';
+            const difficultyLabel = b.difficulty <= 2 ? 'easy' : b.difficulty <= 4 ? 'medium' : 'hard';
+            const capital = b.capitalRequired || b.min_deposit || 0;
+            const capitalDisplay = capital ? `$${capital.toLocaleString()}` : 'None';
+            const tags = b.tags || [];
+            const tagHtml = tags.slice(0, 3).map(t => `<span class="badge bg-gray-100 text-gray-600">${t}</span>`).join('');
+
+            html += `
+              <div class="bonus-card">
+                <div class="flex justify-between items-start mb-2">
+                  <span class="badge ${difficultyClass}">${difficultyLabel}</span>
+                  <span class="badge bg-blue-100 text-blue-700">${b.category || 'bank'}</span>
                 </div>
-              ` : ''}
-              <div class="flex flex-wrap gap-1 mt-3">
-                ${tagHtml}
+                <div class="bonus-amount">$${b.bonusAmount?.toLocaleString()}</div>
+                <div class="bonus-bank mt-1">${b.bank || b.platform || 'Unknown'}</div>
+                <p class="text-sm text-secondary mt-2 line-clamp-2" title="${b.requirements || ''}">
+                  ${b.requirements || 'No requirements listed'}
+                </p>
+                ${capital ? `
+                  <div class="capital-box">
+                    <div class="label">Capital Needed</div>
+                    <div class="value">$${capital.toLocaleString()}</div>
+                  </div>
+                ` : ''}
+                <div class="flex flex-wrap gap-1 mt-3">${tagHtml}</div>
+                ${b.expiryDate ? `
+                  <div class="text-xs text-red-600 mt-2 flex items-center gap-1">
+                    <span>⏳</span> Expires ${new Date(b.expiryDate).toLocaleDateString()}
+                  </div>
+                ` : ''}
               </div>
-              ${b.expiryDate ? `
-                <div class="text-xs text-red-600 mt-2 flex items-center gap-1">
-                  <span>⏳</span> Expires ${new Date(b.expiryDate).toLocaleDateString()}
-                </div>
-              ` : ''}
-            </div>
-          `;
-        });
-        gridEl.innerHTML = html;
+            `;
+          });
+          gridEl.innerHTML = html;
+        }
+
+        refreshBtn.addEventListener('click', () => location.reload());
+        sortSelect.addEventListener('change', applyFiltersAndSort);
+        fetchData();
       }
 
-      // Refresh button
-      document.getElementById('refreshBtn').addEventListener('click', () => {
-        location.reload();
-      });
+      // ========== RENDER TEST PAGE ==========
+      function renderTestPage() {
+        const container = document.getElementById('mainContainer');
+        container.innerHTML = `
+          <div class="test-panel">
+            <div class="flex items-center justify-between mb-6">
+              <h1 class="text-2xl font-bold gradient-text">🧪 Error Monitoring Test Page</h1>
+              <div class="flex items-center gap-2">
+                <span class="text-sm">Health:</span>
+                <span id="healthIndicator" class="health-indicator health-healthy"></span>
+                <span id="healthText" class="text-sm">healthy</span>
+              </div>
+            </div>
 
-      // Sort change
-      sortSelect.addEventListener('change', () => {
-        applyFiltersAndSort();
-      });
+            <div class="test-grid">
+              <button class="test-button danger" id="testJsError">JavaScript Error</button>
+              <button class="test-button warning" id="testNetworkError">Network Error</button>
+              <button class="test-button warning" id="testWarning">Warning</button>
+              <button class="test-button danger" id="testEncryptionError">Encryption Error</button>
+              <button class="test-button danger" id="testSyncError">Sync Error</button>
+              <button class="test-button danger" id="testErrorBoundary">Error Boundary</button>
+              <button class="test-button success" id="testRunAll">▶ Run All Tests</button>
+            </div>
 
-      // Initial load
-      fetchData();
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="text-lg font-semibold">Test Results Console</h2>
+              <button class="btn-secondary text-sm py-1" id="clearLogs">Clear Logs</button>
+            </div>
+            <div class="log-console" id="logConsole"></div>
+
+            <div class="mt-6">
+              <h2 class="text-lg font-semibold mb-2">Error Summary</h2>
+              <table class="summary-table">
+                <thead>
+                  <tr><th>Type</th><th>Count</th></tr>
+                </thead>
+                <tbody id="summaryBody"></tbody>
+              </table>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+              <button class="btn-primary" id="exportReport">📥 Export Error Report</button>
+              <button class="btn-secondary" id="backToDashboard">← Back to Dashboard</button>
+            </div>
+
+            <!-- Simulated error boundary fallback (hidden by default) -->
+            <div id="errorBoundaryFallback" class="error-boundary-fallback hidden">
+              <h3 class="font-bold text-red-800 mb-2">😰 Something went wrong</h3>
+              <p class="text-red-700 mb-3">This is a simulated error boundary fallback.</p>
+              <button class="btn-primary" id="dismissFallback">Dismiss</button>
+            </div>
+          </div>
+        `;
+
+        // Get elements
+        const logConsole = document.getElementById('logConsole');
+        const summaryBody = document.getElementById('summaryBody');
+        const healthIndicator = document.getElementById('healthIndicator');
+        const healthText = document.getElementById('healthText');
+        const fallbackDiv = document.getElementById('errorBoundaryFallback');
+
+        function logToConsole(entry) {
+          const line = document.createElement('div');
+          line.className = `log-entry log-${entry.type}`;
+          line.textContent = `[${new Date(entry.timestamp).toLocaleTimeString()}] ${entry.type.toUpperCase()}: ${entry.message}`;
+          logConsole.appendChild(line);
+          logConsole.scrollTop = logConsole.scrollHeight;
+        }
+
+        function updateSummary() {
+          const stats = errorMonitor.getStats();
+          let html = '';
+          ['error', 'warning', 'network', 'sync', 'encryption', 'info'].forEach(type => {
+            html += `<tr><td>${type}</td><td>${stats[type] || 0}</td></tr>`;
+          });
+          summaryBody.innerHTML = html;
+          const health = errorMonitor.getHealthStatus();
+          healthIndicator.className = `health-indicator health-${health.status}`;
+          healthText.textContent = health.message;
+        }
+
+        // Listen to new errors
+        const unsubscribe = errorMonitor.onError(entry => {
+          logToConsole(entry);
+          updateSummary();
+        });
+
+        // Load existing errors
+        errorMonitor.getAllErrors().forEach(entry => logToConsole(entry));
+        updateSummary();
+
+        // Test buttons
+        document.getElementById('testJsError').addEventListener('click', () => {
+          try {
+            throw new Error('Intentional JavaScript error');
+          } catch (e) {
+            errorMonitor.logError('Test JavaScript Error', { test: 'javascript-error', message: e.message });
+          }
+        });
+
+        document.getElementById('testNetworkError').addEventListener('click', () => {
+          errorMonitor.logNetworkError('Test network error (simulated)', { url: 'https://fake.api/test', status: 404 });
+        });
+
+        document.getElementById('testWarning').addEventListener('click', () => {
+          errorMonitor.logWarning('Test warning message', { test: 'warning' });
+        });
+
+        document.getElementById('testEncryptionError').addEventListener('click', () => {
+          errorMonitor.logEncryptionError('Test encryption failure', { algorithm: 'AES-GCM', reason: 'invalid key' });
+        });
+
+        document.getElementById('testSyncError').addEventListener('click', () => {
+          errorMonitor.logSyncError('Test sync failure', { device: 'test-device', version: 1 });
+        });
+
+        document.getElementById('testErrorBoundary').addEventListener('click', () => {
+          // Simulate component crash and show fallback
+          fallbackDiv.classList.remove('hidden');
+          errorMonitor.logError('Simulated error boundary caught a crash', { component: 'TestComponent' });
+        });
+
+        document.getElementById('testRunAll').addEventListener('click', () => {
+          // Run all tests sequentially
+          document.getElementById('testJsError').click();
+          setTimeout(() => document.getElementById('testNetworkError').click(), 100);
+          setTimeout(() => document.getElementById('testWarning').click(), 200);
+          setTimeout(() => document.getElementById('testEncryptionError').click(), 300);
+          setTimeout(() => document.getElementById('testSyncError').click(), 400);
+          setTimeout(() => document.getElementById('testErrorBoundary').click(), 500);
+        });
+
+        document.getElementById('clearLogs').addEventListener('click', () => {
+          errorMonitor.clear();
+          logConsole.innerHTML = '';
+          updateSummary();
+        });
+
+        document.getElementById('exportReport').addEventListener('click', () => {
+          const report = errorMonitor.exportErrors();
+          const blob = new Blob([report], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `bato-errors-${Date.now()}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('dismissFallback').addEventListener('click', () => {
+          fallbackDiv.classList.add('hidden');
+        });
+
+        document.getElementById('backToDashboard').addEventListener('click', () => {
+          window.location.href = window.location.pathname; // remove query params
+        });
+      }
+
+      // ========== RENDER BASED ON MODE ==========
+      if (isTestMode) {
+        renderTestPage();
+      } else {
+        renderDashboard();
+      }
     })();
   </script>
 </body>
