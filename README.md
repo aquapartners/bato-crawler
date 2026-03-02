@@ -1,7 +1,7 @@
 ### 📄 `README.md`
 
 ```markdown
-# 🕷️ Bato Finance Crawler
+# 🕷️ Bato Finance Crawler 
 
 This repository contains the **Python web crawler** that collects bank, crypto, investment, and other financial bonuses for the [Bato Finance](https://bato.market) platform. The crawler runs automatically via GitHub Actions and publishes the results as a static JSON file, which is then consumed by the frontend.
 
