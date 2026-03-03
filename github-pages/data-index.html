@@ -1437,17 +1437,183 @@
     .mt-4 {
       margin-top: 1rem;
     }
+
+    /* ===== LOCK SCREEN ===== */
+    .lock-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--bato-purple-start) 0%, var(--bato-blue-end) 100%);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .lock-screen.hidden {
+      display: none;
+    }
+
+    .lock-content {
+      background: white;
+      border-radius: var(--radius-xl);
+      padding: 3rem 2rem;
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+      animation: lockScreenSlideIn 0.5s ease-out;
+    }
+
+    @keyframes lockScreenSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .lock-icon {
+      font-size: 5rem;
+      margin-bottom: 1.5rem;
+      animation: lockPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes lockPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    .lock-title {
+      font-size: 2rem;
+      font-weight: var(--font-weight-medium);
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 1rem;
+    }
+
+    .lock-description {
+      font-size: 1rem;
+      color: var(--muted-foreground);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .lock-btn {
+      padding: 1rem 2.5rem;
+      font-size: 1.125rem;
+      border-radius: var(--radius-lg);
+      background: var(--gradient-primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: var(--font-weight-medium);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .lock-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5);
+    }
+
+    .lock-features {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1.5rem;
+      text-align: left;
+    }
+
+    .lock-feature {
+      display: flex;
+      align-items: start;
+      gap: 0.75rem;
+    }
+
+    .lock-feature-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .lock-feature-text {
+      font-size: 0.875rem;
+      color: var(--foreground);
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* Dashboard content - hidden by default */
+    .dashboard-content {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    .dashboard-content.unlocked {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body>
+  <!-- Lock Screen (shown first) -->
+  <div class="lock-screen" id="lockScreen">
+    <div class="lock-content">
+      <div class="lock-icon">🔒</div>
+      <h1 class="lock-title">GitHub Configuration Required</h1>
+      <p class="lock-description">
+        To access the Bato Finance Global Bonus Marketplace, you need to configure and validate your GitHub Personal Access Token. 
+        This ensures secure access to the bonus data crawler.
+      </p>
+      <button class="lock-btn" id="unlockBtn">
+        <span>⚙️</span>
+        <span>Configure GitHub Token</span>
+      </button>
+      
+      <div class="lock-features">
+        <div class="lock-feature">
+          <div class="lock-feature-icon">🔐</div>
+          <div class="lock-feature-text">Secure token storage in browser</div>
+        </div>
+        <div class="lock-feature">
+          <div class="lock-feature-icon">✅</div>
+          <div class="lock-feature-text">3-step validation process</div>
+        </div>
+        <div class="lock-feature">
+          <div class="lock-feature-icon">🚀</div>
+          <div class="lock-feature-text">Access 571+ bonuses</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Animated Background -->
   <div class="animated-bg"></div>
 
   <!-- Floating Particles -->
   <div class="particles" id="particles"></div>
 
-  <!-- Top Navigation -->
-  <div class="top-nav">
+  <!-- Dashboard Content (hidden until unlocked) -->
+  <div class="dashboard-content" id="dashboardContent">
+    <!-- Top Navigation -->
+    <div class="top-nav">
     <div class="nav-container">
       <div class="logo">
         <span class="logo-icon">🏦</span>
@@ -1661,8 +1827,9 @@
       </div>
     </div>
   </div>
+  </div> <!-- End dashboard-content -->
 
-  <!-- GitHub Config Modal -->
+  <!-- GitHub Config Modal (Outside dashboard-content so it works on lock screen) -->
   <div class="modal" id="githubModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -1723,7 +1890,257 @@
       const STORAGE_KEY_TRIGGER = 'bato_last_github_trigger';
       const STORAGE_KEY_BOOKMARKS = 'bato_bookmarks';
 
-      // ===== STATE =====
+      // ===== LOCK SCREEN ELEMENTS =====
+      const lockScreen = document.getElementById('lockScreen');
+      const unlockBtn = document.getElementById('unlockBtn');
+      const dashboardContent = document.getElementById('dashboardContent');
+
+      // ===== UTILITY FUNCTIONS (always available) =====
+      
+      // Create floating particles
+      function createParticles() {
+        const particlesContainer = document.getElementById('particles');
+        if (!particlesContainer) return;
+        const particleCount = 15;
+        
+        for (let i = 0; i < particleCount; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.width = `${Math.random() * 60 + 20}px`;
+          particle.style.height = particle.style.width;
+          particle.style.left = `${Math.random() * 100}%`;
+          particle.style.top = `${Math.random() * 100}%`;
+          particle.style.animationDuration = `${Math.random() * 10 + 15}s`;
+          particle.style.animationDelay = `${Math.random() * 5}s`;
+          particlesContainer.appendChild(particle);
+        }
+      }
+
+      // Toast notification
+      window.showToast = function(message, duration = 3000) {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        if (toast && toastMessage) {
+          toastMessage.textContent = message;
+          toast.classList.add('show');
+          setTimeout(() => {
+            toast.classList.remove('show');
+          }, duration);
+        }
+      };
+
+      // Load GitHub config to modal
+      function loadGitHubConfigToModal() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY_CONFIG);
+          if (saved) {
+            const config = JSON.parse(saved);
+            const elements = {
+              githubToken: document.getElementById('githubToken'),
+              githubRepo: document.getElementById('githubRepo'),
+              githubWorkflow: document.getElementById('githubWorkflow'),
+              tokenStatus: document.getElementById('tokenStatus')
+            };
+            
+            if (elements.githubToken) elements.githubToken.value = config.token || '';
+            if (elements.githubRepo) elements.githubRepo.value = config.repo || 'aquapartners/bato-crawler';
+            if (elements.githubWorkflow) elements.githubWorkflow.value = config.workflowFile || 'crawl.yml';
+            if (elements.tokenStatus && config.isValid && config.lastValidated) {
+              elements.tokenStatus.textContent = `✓ Valid (last check: ${new Date(config.lastValidated).toLocaleString()})`;
+              elements.tokenStatus.className = 'status-badge status-valid';
+            }
+          }
+        } catch (e) {
+          console.error('Error loading config:', e);
+        }
+      }
+
+      // Validate GitHub Token
+      async function validateGitHubToken(token, repo, workflowFile) {
+        if (!token) return { valid: false, message: 'No token provided' };
+        try {
+          const userResp = await fetch('https://api.github.com/user', {
+            headers: { 'Authorization': `token ${token}` }
+          });
+          if (!userResp.ok) {
+            const err = await userResp.json();
+            return { valid: false, message: err.message || 'Invalid token' };
+          }
+          const user = await userResp.json();
+
+          const repoResp = await fetch(`https://api.github.com/repos/${repo}`, {
+            headers: { 'Authorization': `token ${token}` }
+          });
+          if (!repoResp.ok) {
+            return { valid: false, message: `Cannot access repository: ${repo}` };
+          }
+
+          const workflowResp = await fetch(`https://api.github.com/repos/${repo}/contents/.github/workflows/${workflowFile}`, {
+            headers: { 'Authorization': `token ${token}` }
+          });
+          if (!workflowResp.ok) {
+            return { valid: false, message: `Workflow file not found: .github/workflows/${workflowFile}` };
+          }
+
+          return {
+            valid: true,
+            message: `Token valid for ${user.login} – workflow file exists`
+          };
+        } catch (err) {
+          return { valid: false, message: err.message };
+        }
+      }
+
+      // Setup GitHub modal controls
+      function setupGitHubModalControls() {
+        const modal = document.getElementById('githubModal');
+        const closeModalBtn = document.getElementById('closeModal');
+        const toggleTokenBtn = document.getElementById('toggleToken');
+        const tokenInput = document.getElementById('githubToken');
+        const validateBtn = document.getElementById('validateTokenBtn');
+        const saveBtn = document.getElementById('saveConfigBtn');
+        const tokenStatus = document.getElementById('tokenStatus');
+        const repoInput = document.getElementById('githubRepo');
+        const workflowInput = document.getElementById('githubWorkflow');
+
+        // Toggle token visibility
+        if (toggleTokenBtn && tokenInput) {
+          toggleTokenBtn.addEventListener('click', () => {
+            if (tokenInput.type === 'password') {
+              tokenInput.type = 'text';
+              toggleTokenBtn.textContent = 'Hide';
+            } else {
+              tokenInput.type = 'password';
+              toggleTokenBtn.textContent = 'Show';
+            }
+          });
+        }
+
+        // Validate token
+        if (validateBtn) {
+          validateBtn.addEventListener('click', async () => {
+            const token = tokenInput.value.trim();
+            const repo = repoInput.value.trim();
+            const workflow = workflowInput.value.trim();
+
+            tokenStatus.textContent = 'Validating...';
+            tokenStatus.className = 'status-badge status-unknown';
+
+            const result = await validateGitHubToken(token, repo, workflow);
+            if (result.valid) {
+              tokenStatus.textContent = `✓ ${result.message}`;
+              tokenStatus.className = 'status-badge status-valid';
+              const config = {
+                token,
+                repo,
+                workflowFile: workflow,
+                isValid: true,
+                lastValidated: Date.now()
+              };
+              localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
+              
+              // Show success and reload to unlock dashboard
+              showToast('✅ Token validated successfully! Unlocking dashboard...');
+              setTimeout(() => {
+                modal.classList.remove('show');
+                location.reload();
+              }, 1500);
+            } else {
+              tokenStatus.textContent = `✗ ${result.message}`;
+              tokenStatus.className = 'status-badge status-invalid';
+            }
+          });
+        }
+
+        // Save config
+        if (saveBtn) {
+          saveBtn.addEventListener('click', () => {
+            const config = {
+              token: tokenInput.value.trim(),
+              repo: repoInput.value.trim(),
+              workflowFile: workflowInput.value.trim(),
+              isValid: false,
+              lastValidated: null
+            };
+            localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
+            tokenStatus.textContent = 'Configuration saved (not validated)';
+            tokenStatus.className = 'status-badge status-unknown';
+            modal.classList.remove('show');
+            showToast('Configuration saved');
+          });
+        }
+
+        // Close modal
+        if (closeModalBtn) {
+          closeModalBtn.addEventListener('click', () => modal.classList.remove('show'));
+        }
+
+        // Click outside to close
+        window.addEventListener('click', (e) => {
+          if (e.target === modal) modal.classList.remove('show');
+        });
+      }
+
+      // ===== CHECK TOKEN VALIDATION ON LOAD =====
+      function checkTokenValidation() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY_CONFIG);
+          if (saved) {
+            const config = JSON.parse(saved);
+            // Check if token is validated and not expired (valid for 7 days)
+            if (config.isValid && config.lastValidated) {
+              const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+              if (config.lastValidated > sevenDaysAgo) {
+                unlockDashboard();
+                return true;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error checking token:', e);
+        }
+        return false;
+      }
+
+      // ===== UNLOCK DASHBOARD =====
+      function unlockDashboard() {
+        lockScreen.classList.add('hidden');
+        dashboardContent.classList.add('unlocked');
+      }
+
+      // ===== UNLOCK BUTTON CLICK =====
+      if (unlockBtn) {
+        unlockBtn.addEventListener('click', () => {
+          console.log('🔓 Unlock button clicked!');
+          // Open the GitHub config modal
+          const modal = document.getElementById('githubModal');
+          console.log('Modal element:', modal);
+          if (modal) {
+            modal.classList.add('show');
+            console.log('✅ Modal show class added');
+          } else {
+            console.error('❌ Modal element not found!');
+          }
+        });
+      } else {
+        console.error('❌ Unlock button not found!');
+      }
+
+      // ===== INITIALIZE ALWAYS-RUN CODE =====
+      setupGitHubModalControls();
+      loadGitHubConfigToModal();
+      createParticles();
+
+      // Check if already validated on page load
+      const isValidated = checkTokenValidation();
+
+      // If not validated, show lock screen and stop here
+      if (!isValidated) {
+        console.log('🔒 GitHub token not validated. Please configure to access dashboard.');
+        return; // Don't initialize dashboard
+      }
+
+      // ===== STATE (only if validated) =====
       let allBonuses = [];
       let filteredBonuses = [];
       let bookmarkedIds = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY_BOOKMARKS) || '[]'));
@@ -1789,24 +2206,6 @@
         displayLastTriggerTime();
         loadGitHubConfigToModal();
         await fetchData();
-      }
-
-      // ===== CREATE FLOATING PARTICLES =====
-      function createParticles() {
-        const particlesContainer = document.getElementById('particles');
-        const particleCount = 15;
-        
-        for (let i = 0; i < particleCount; i++) {
-          const particle = document.createElement('div');
-          particle.className = 'particle';
-          particle.style.width = `${Math.random() * 60 + 20}px`;
-          particle.style.height = particle.style.width;
-          particle.style.left = `${Math.random() * 100}%`;
-          particle.style.top = `${Math.random() * 100}%`;
-          particle.style.animationDuration = `${Math.random() * 10 + 15}s`;
-          particle.style.animationDelay = `${Math.random() * 5}s`;
-          particlesContainer.appendChild(particle);
-        }
       }
 
       // ===== FETCH DATA =====
@@ -2155,58 +2554,6 @@
         }, duration);
       }
 
-      // ===== GITHUB CONFIG =====
-      function loadGitHubConfigToModal() {
-        try {
-          const saved = localStorage.getItem(STORAGE_KEY_CONFIG);
-          if (saved) {
-            const config = JSON.parse(saved);
-            elements.githubToken.value = config.token || '';
-            elements.githubRepo.value = config.repo || 'aquapartners/bato-crawler';
-            elements.githubWorkflow.value = config.workflowFile || 'crawl.yml';
-            if (config.isValid && config.lastValidated) {
-              elements.tokenStatus.textContent = `✓ Valid (last check: ${new Date(config.lastValidated).toLocaleString()})`;
-              elements.tokenStatus.className = 'status-badge status-valid';
-            }
-          }
-        } catch (e) {}
-      }
-
-      async function validateGitHubToken(token, repo, workflowFile) {
-        if (!token) return { valid: false, message: 'No token provided' };
-        try {
-          const userResp = await fetch('https://api.github.com/user', {
-            headers: { 'Authorization': `token ${token}` }
-          });
-          if (!userResp.ok) {
-            const err = await userResp.json();
-            return { valid: false, message: err.message || 'Invalid token' };
-          }
-          const user = await userResp.json();
-
-          const repoResp = await fetch(`https://api.github.com/repos/${repo}`, {
-            headers: { 'Authorization': `token ${token}` }
-          });
-          if (!repoResp.ok) {
-            return { valid: false, message: `Cannot access repository: ${repo}` };
-          }
-
-          const workflowResp = await fetch(`https://api.github.com/repos/${repo}/contents/.github/workflows/${workflowFile}`, {
-            headers: { 'Authorization': `token ${token}` }
-          });
-          if (!workflowResp.ok) {
-            return { valid: false, message: `Workflow file not found: .github/workflows/${workflowFile}` };
-          }
-
-          return {
-            valid: true,
-            message: `Token valid for ${user.login} – workflow file exists`
-          };
-        } catch (err) {
-          return { valid: false, message: err.message };
-        }
-      }
-
       // ===== GLOBAL FUNCTIONS (for onclick handlers) =====
       window.toggleBookmark = function(id) {
         if (bookmarkedIds.has(id)) {
@@ -2411,72 +2758,20 @@
           }
         });
 
-        // Modal controls
-        elements.toggleToken.addEventListener('click', () => {
-          if (elements.githubToken.type === 'password') {
-            elements.githubToken.type = 'text';
-            elements.toggleToken.textContent = 'Hide';
-          } else {
-            elements.githubToken.type = 'password';
-            elements.toggleToken.textContent = 'Show';
-          }
-        });
-
-        elements.validateTokenBtn.addEventListener('click', async () => {
-          const token = elements.githubToken.value.trim();
-          const repo = elements.githubRepo.value.trim();
-          const workflow = elements.githubWorkflow.value.trim();
-
-          elements.tokenStatus.textContent = 'Validating...';
-          elements.tokenStatus.className = 'status-badge status-unknown';
-
-          const result = await validateGitHubToken(token, repo, workflow);
-          if (result.valid) {
-            elements.tokenStatus.textContent = `✓ ${result.message}`;
-            elements.tokenStatus.className = 'status-badge status-valid';
-            const config = {
-              token,
-              repo,
-              workflowFile: workflow,
-              isValid: true,
-              lastValidated: Date.now()
-            };
-            localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-          } else {
-            elements.tokenStatus.textContent = `✗ ${result.message}`;
-            elements.tokenStatus.className = 'status-badge status-invalid';
-          }
-        });
-
-        elements.saveConfigBtn.addEventListener('click', () => {
-          const config = {
-            token: elements.githubToken.value.trim(),
-            repo: elements.githubRepo.value.trim(),
-            workflowFile: elements.githubWorkflow.value.trim(),
-            isValid: false,
-            lastValidated: null
-          };
-          localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-          elements.tokenStatus.textContent = 'Configuration saved (not validated)';
-          elements.tokenStatus.className = 'status-badge status-unknown';
-          elements.githubModal.classList.remove('show');
-          showToast('Configuration saved');
-        });
-
+        // GitHub Config Link (in footer)
         const githubConfigLink = document.getElementById('githubConfigLink');
         if (githubConfigLink) {
           githubConfigLink.addEventListener('click', (e) => {
             e.preventDefault();
-            elements.githubModal.classList.add('show');
+            const modal = document.getElementById('githubModal');
+            if (modal) modal.classList.add('show');
             const timestamp = localStorage.getItem(STORAGE_KEY_TRIGGER);
-            elements.lastTriggerModal.textContent = timestamp ? new Date(parseInt(timestamp)).toLocaleString() : 'never';
+            const lastTriggerModal = document.getElementById('lastTriggerModal');
+            if (lastTriggerModal) {
+              lastTriggerModal.textContent = timestamp ? new Date(parseInt(timestamp)).toLocaleString() : 'never';
+            }
           });
         }
-
-        elements.closeModal.addEventListener('click', () => elements.githubModal.classList.remove('show'));
-        window.addEventListener('click', (e) => {
-          if (e.target === elements.githubModal) elements.githubModal.classList.remove('show');
-        });
       }
 
       // ===== EXPORT TO CSV =====
