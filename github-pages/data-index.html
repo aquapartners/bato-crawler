@@ -203,39 +203,94 @@
     }
 
     .btn {
-      padding: 0.625rem 1.25rem;
-      border-radius: var(--radius);
+      padding: 1rem 2.5rem;
+      border-radius: var(--radius-lg);
       font-weight: var(--font-weight-medium);
-      font-size: 0.875rem;
+      font-size: 1.125rem;
       border: none;
       cursor: pointer;
       transition: all 0.3s ease;
       white-space: nowrap;
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: center;
+      gap: 0.75rem;
     }
 
+    /* ===== PRIMARY BUTTON (Save Configuration) ===== */
     .btn-primary {
       background: var(--gradient-primary);
-      color: var(--bato-white);
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+      color: white;
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+      padding: 1rem 2.5rem;
+      border-radius: var(--radius-lg);
+      font-weight: var(--font-weight-medium);
+      font-size: 1.125rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
     }
 
     .btn-primary:hover {
       transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
       box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
     }
 
+    /* ===== SECONDARY BUTTON (Show, Validate Token) ===== */
     .btn-secondary {
-      background: var(--bato-white);
-      color: var(--bato-purple-start);
-      border: 2px solid var(--bato-purple-start);
+      background: var(--gradient-primary);
+      color: white;
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+      padding: 1rem 2.5rem;
+      border-radius: var(--radius-lg);
+      font-weight: var(--font-weight-medium);
+      font-size: 1.125rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
     }
 
     .btn-secondary:hover {
-      background: var(--bato-purple-start);
-      color: var(--bato-white);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5);
+    }
+
+    .btn-secondary:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+    }
+
+    /* ===== DESTRUCTIVE BUTTON (Clear Token) ===== */
+    .btn-destructive {
+      background: var(--gradient-primary);
+      color: white;
+      border: none;
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+      padding: 1rem 2.5rem;
+      border-radius: var(--radius-lg);
+      font-weight: var(--font-weight-medium);
+      font-size: 1.125rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn-destructive:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5);
+    }
+
+    .btn-destructive:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
     }
 
     .btn-icon {
@@ -484,16 +539,16 @@
     }
 
     .action-btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: var(--radius);
+      padding: 1rem 2.5rem;
+      border-radius: var(--radius-lg);
       font-weight: var(--font-weight-medium);
-      font-size: 0.875rem;
-      border: 2px solid transparent;
+      font-size: 1.125rem;
+      border: none;
       cursor: pointer;
       transition: all 0.3s ease;
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
       background: var(--muted);
       color: var(--foreground);
     }
@@ -502,13 +557,13 @@
       background: var(--gradient-primary);
       color: white;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5);
     }
 
     .action-btn.active {
       background: var(--gradient-primary);
       color: white;
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
     }
 
     /* ===== SEARCH & FILTERS ===== */
@@ -577,30 +632,31 @@
     }
 
     .filter-tab {
-      padding: 0.625rem 1.25rem;
-      border-radius: var(--radius);
+      padding: 1rem 2.5rem;
+      border-radius: var(--radius-lg);
       font-weight: var(--font-weight-medium);
-      font-size: 0.875rem;
-      border: 2px solid transparent;
+      font-size: 1.125rem;
+      border: none;
       cursor: pointer;
       transition: all 0.3s ease;
       background: var(--muted);
       color: var(--muted-foreground);
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
 
     .filter-tab:hover {
-      background: rgba(124, 58, 237, 0.1);
-      color: var(--bato-purple-start);
-      border-color: rgba(124, 58, 237, 0.2);
+      background: var(--gradient-primary);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5);
     }
 
     .filter-tab.active {
       background: var(--gradient-primary);
       color: white;
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
     }
 
     .filter-tab .badge {
@@ -1358,6 +1414,11 @@
       flex: 1;
     }
 
+    .token-input-wrapper button {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
     .status-badge {
       display: inline-block;
       padding: 0.5rem 1rem;
@@ -1428,20 +1489,25 @@
     }
 
     .expiration-warning-btn {
-      background: #ef4444;
+      padding: 1rem 2.5rem;
+      font-size: 1.125rem;
+      border-radius: var(--radius-lg);
+      background: var(--gradient-primary);
       color: white;
       border: none;
-      padding: 0.5rem 1rem;
-      border-radius: var(--radius-md);
       cursor: pointer;
       font-weight: var(--font-weight-medium);
-      transition: all 0.2s ease;
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+      transition: all 0.3s ease;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
     }
 
     .expiration-warning-btn:hover {
-      background: #dc2626;
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.5);
     }
 
     @keyframes slideDown {
@@ -1968,7 +2034,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" id="clearTokenBtn" style="background: #ef4444; color: white;">🗑️ Clear Token</button>
+        <button class="btn-destructive" id="clearTokenBtn">🗑️ Clear Token</button>
         <button class="btn-secondary" id="validateTokenBtn">🔄 Validate Token</button>
         <button class="btn-primary" id="saveConfigBtn">💾 Save Configuration</button>
       </div>
@@ -2362,7 +2428,8 @@
 
       // ===== UNLOCK BUTTON CLICK =====
       if (unlockBtn) {
-        unlockBtn.addEventListener('click', () => {
+        unlockBtn.addEventListener('click', (e) => {
+          e.stopPropagation(); // Prevent event from bubbling to window click handler
           console.log('🔓 Unlock button clicked!');
           // Open the GitHub config modal
           const modal = document.getElementById('githubModal');
