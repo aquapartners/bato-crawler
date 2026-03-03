@@ -2268,11 +2268,25 @@
               };
               localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
               
-              // Show success and reload to unlock dashboard
+              // Update expiration display
+              if (elements.tokenExpiration) {
+                const expirationDate = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000));
+                elements.tokenExpiration.textContent = `Expires in 7 days (${expirationDate.toLocaleDateString()})`;
+                elements.tokenExpiration.style.color = 'var(--muted-foreground)';
+              }
+              
+              if (elements.lastValidated) {
+                elements.lastValidated.textContent = new Date().toLocaleString();
+              }
+              
+              // Show success toast
               showToast('✅ Token validated successfully! Unlocking dashboard...');
+              
+              // Close modal and unlock dashboard without reload
               setTimeout(() => {
                 modal.classList.remove('show');
-                location.reload();
+                unlockDashboard();
+                updateFooterTokenStatus();
               }, 1500);
             } else {
               tokenStatus.textContent = `✗ ${result.message}`;
@@ -2519,6 +2533,8 @@
         githubRepo: document.getElementById('githubRepo'),
         githubWorkflow: document.getElementById('githubWorkflow'),
         tokenStatus: document.getElementById('tokenStatus'),
+        tokenExpiration: document.getElementById('tokenExpiration'),
+        lastValidated: document.getElementById('lastValidated'),
         lastTriggerModal: document.getElementById('lastTriggerModal'),
         validateTokenBtn: document.getElementById('validateTokenBtn'),
         saveConfigBtn: document.getElementById('saveConfigBtn')
@@ -3125,7 +3141,8 @@
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-      } 
+      }
+
       // ===== START APP =====
       init();
     })();
