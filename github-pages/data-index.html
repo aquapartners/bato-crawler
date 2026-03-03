@@ -1386,7 +1386,73 @@
       border-top: 1px solid var(--border);
       display: flex;
       justify-content: flex-end;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* ===== EXPIRATION WARNING BANNER ===== */
+    .expiration-warning {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border-left: 4px solid #ef4444;
+      padding: 1rem 1.5rem;
+      margin: 1rem 0;
+      border-radius: var(--radius-md);
+      display: none;
+      align-items: center;
       gap: 1rem;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .expiration-warning.show {
+      display: flex;
+    }
+
+    .expiration-warning-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .expiration-warning-content {
+      flex: 1;
+    }
+
+    .expiration-warning-title {
+      font-weight: var(--font-weight-medium);
+      color: #991b1b;
+      margin-bottom: 0.25rem;
+    }
+
+    .expiration-warning-text {
+      font-size: 0.875rem;
+      color: #7f1d1d;
+    }
+
+    .expiration-warning-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-weight: var(--font-weight-medium);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .expiration-warning-btn:hover {
+      background: #dc2626;
+      transform: translateY(-1px);
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* ===== RESPONSIVE ===== */
@@ -1422,6 +1488,24 @@
         width: 50px;
         height: 50px;
         font-size: 1.25rem;
+      }
+
+      .expiration-warning {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem;
+      }
+
+      .expiration-warning-btn {
+        width: 100%;
+      }
+
+      .modal-footer {
+        flex-direction: column;
+      }
+
+      .modal-footer button {
+        width: 100%;
       }
     }
 
@@ -1628,6 +1712,16 @@
     </div>
   </div>
 
+  <!-- Token Expiration Warning Banner -->
+  <div class="expiration-warning" id="expirationWarning">
+    <div class="expiration-warning-icon">⚠️</div>
+    <div class="expiration-warning-content">
+      <div class="expiration-warning-title">GitHub Token Expiring Soon</div>
+      <div class="expiration-warning-text" id="expirationWarningText">Your token will expire soon. Re-validate to maintain access.</div>
+    </div>
+    <button class="expiration-warning-btn" id="revalidateFromBanner">Re-validate Now</button>
+  </div>
+
   <div class="container">
     <!-- Hero Header -->
     <div class="hero-header">
@@ -1822,7 +1916,7 @@
           <a href="#" class="footer-link" id="aboutLink">ℹ️ About</a>
         </div>
         <p class="footer-text" style="font-size: 0.75rem; color: var(--muted-foreground);">
-          Last trigger: <span id="lastTrigger">never</span>
+          Last trigger: <span id="lastTrigger">never</span> • Token: <span id="footerTokenStatus" style="font-weight: 500; color: #10b981;">✓ Active</span>
         </p>
       </div>
     </div>
@@ -1856,8 +1950,16 @@
           <input type="text" id="githubWorkflow" placeholder="crawl.yml" value="crawl.yml">
         </div>
         <div class="config-row">
-          <label>Status</label>
+          <label>Validation Status</label>
           <div id="tokenStatus" class="status-badge status-unknown">Not validated</div>
+        </div>
+        <div class="config-row">
+          <label>Token Expiration</label>
+          <div id="tokenExpiration" style="font-size: 0.875rem; color: var(--muted-foreground);">Not validated yet</div>
+        </div>
+        <div class="config-row">
+          <label>Last Validated</label>
+          <div id="lastValidated" style="font-size: 0.875rem; color: var(--muted-foreground);">Never</div>
         </div>
         <div class="config-row">
           <label>Last Trigger</label>
@@ -1865,8 +1967,9 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" id="validateTokenBtn">Validate Token</button>
-        <button class="btn-primary" id="saveConfigBtn">Save Configuration</button>
+        <button class="btn-secondary" id="clearTokenBtn" style="background: #ef4444; color: white;">🗑️ Clear Token</button>
+        <button class="btn-secondary" id="validateTokenBtn">🔄 Validate Token</button>
+        <button class="btn-primary" id="saveConfigBtn">💾 Save Configuration</button>
       </div>
     </div>
   </div>
@@ -1883,6 +1986,38 @@
   <script>
     (function() {
       'use strict';
+
+      /* ===== BATO FINANCE GITHUB TOKEN VALIDATION SYSTEM =====
+       * 
+       * Features implemented:
+       * 
+       * 1. LOCK SCREEN & VALIDATION
+       *    - Dashboard is locked until GitHub token is validated
+       *    - 3-step validation: User auth → Repo access → Workflow file check
+       *    - 7-day token expiration with automatic re-lock
+       * 
+       * 2. TOKEN MANAGEMENT
+       *    - Manual re-validate button (🔄 Validate Token)
+       *    - Clear/logout button (🗑️ Clear Token) with confirmation
+       *    - Save configuration without validation option
+       * 
+       * 3. EXPIRATION TRACKING
+       *    - Token expiration countdown in modal
+       *    - Last validated timestamp display
+       *    - Days remaining calculation
+       * 
+       * 4. VISUAL FEEDBACK
+       *    - Warning banner when ≤2 days remain (with Re-validate button)
+       *    - Footer status indicator showing token health
+       *    - Color-coded status: Green (>2d), Orange (1-2d), Red (expired)
+       *    - Status badges in modal
+       * 
+       * 5. USER EXPERIENCE
+       *    - One-click re-validation from banner
+       *    - Token visibility toggle (Show/Hide)
+       *    - Persistent configuration in localStorage
+       *    - Automatic reload after validation
+       */
 
       // ===== CONFIGURATION =====
       const CDN_URL = 'https://aquapartners.github.io/bato-crawler/data/bonuses.json';
@@ -1939,15 +2074,41 @@
               githubToken: document.getElementById('githubToken'),
               githubRepo: document.getElementById('githubRepo'),
               githubWorkflow: document.getElementById('githubWorkflow'),
-              tokenStatus: document.getElementById('tokenStatus')
+              tokenStatus: document.getElementById('tokenStatus'),
+              tokenExpiration: document.getElementById('tokenExpiration'),
+              lastValidated: document.getElementById('lastValidated')
             };
             
             if (elements.githubToken) elements.githubToken.value = config.token || '';
             if (elements.githubRepo) elements.githubRepo.value = config.repo || 'aquapartners/bato-crawler';
             if (elements.githubWorkflow) elements.githubWorkflow.value = config.workflowFile || 'crawl.yml';
+            
+            // Update status badge
             if (elements.tokenStatus && config.isValid && config.lastValidated) {
-              elements.tokenStatus.textContent = `✓ Valid (last check: ${new Date(config.lastValidated).toLocaleString()})`;
+              elements.tokenStatus.textContent = '✓ Valid & Active';
               elements.tokenStatus.className = 'status-badge status-valid';
+            }
+            
+            // Calculate expiration
+            if (elements.tokenExpiration && config.lastValidated) {
+              const validatedDate = new Date(config.lastValidated);
+              const expirationDate = new Date(validatedDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+              const now = new Date();
+              const daysRemaining = Math.ceil((expirationDate - now) / (1000 * 60 * 60 * 24));
+              
+              if (daysRemaining > 0) {
+                elements.tokenExpiration.textContent = `Expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} (${expirationDate.toLocaleDateString()})`;
+                elements.tokenExpiration.style.color = daysRemaining <= 2 ? '#ef4444' : 'var(--muted-foreground)';
+              } else {
+                elements.tokenExpiration.textContent = '⚠️ Expired - Re-validate required';
+                elements.tokenExpiration.style.color = '#ef4444';
+              }
+            }
+            
+            // Show last validated date
+            if (elements.lastValidated && config.lastValidated) {
+              const validatedDate = new Date(config.lastValidated);
+              elements.lastValidated.textContent = validatedDate.toLocaleString();
             }
           }
         } catch (e) {
@@ -1999,6 +2160,7 @@
         const tokenInput = document.getElementById('githubToken');
         const validateBtn = document.getElementById('validateTokenBtn');
         const saveBtn = document.getElementById('saveConfigBtn');
+        const clearBtn = document.getElementById('clearTokenBtn');
         const tokenStatus = document.getElementById('tokenStatus');
         const repoInput = document.getElementById('githubRepo');
         const workflowInput = document.getElementById('githubWorkflow');
@@ -2070,6 +2232,20 @@
           });
         }
 
+        // Clear token (logout)
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => {
+            if (confirm('⚠️ Are you sure you want to clear your GitHub token? You will need to re-validate to access the dashboard.')) {
+              localStorage.removeItem(STORAGE_KEY_CONFIG);
+              localStorage.removeItem('bato_token_validation');
+              showToast('🗑️ Token cleared. Reloading...');
+              setTimeout(() => {
+                location.reload();
+              }, 1000);
+            }
+          });
+        }
+
         // Close modal
         if (closeModalBtn) {
           closeModalBtn.addEventListener('click', () => modal.classList.remove('show'));
@@ -2079,6 +2255,15 @@
         window.addEventListener('click', (e) => {
           if (e.target === modal) modal.classList.remove('show');
         });
+
+        // Re-validate from banner
+        const revalidateBannerBtn = document.getElementById('revalidateFromBanner');
+        if (revalidateBannerBtn) {
+          revalidateBannerBtn.addEventListener('click', () => {
+            modal.classList.add('show');
+            loadGitHubConfigToModal();
+          });
+        }
       }
 
       // ===== CHECK TOKEN VALIDATION ON LOAD =====
@@ -2102,10 +2287,76 @@
         return false;
       }
 
+      // ===== UPDATE FOOTER TOKEN STATUS =====
+      function updateFooterTokenStatus() {
+        try {
+          const footerStatus = document.getElementById('footerTokenStatus');
+          if (!footerStatus) return;
+          
+          const saved = localStorage.getItem(STORAGE_KEY_CONFIG);
+          if (saved) {
+            const config = JSON.parse(saved);
+            if (config.isValid && config.lastValidated) {
+              const validatedDate = new Date(config.lastValidated);
+              const expirationDate = new Date(validatedDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+              const now = new Date();
+              const daysRemaining = Math.ceil((expirationDate - now) / (1000 * 60 * 60 * 24));
+              
+              if (daysRemaining > 2) {
+                footerStatus.textContent = `✓ Active (${daysRemaining}d left)`;
+                footerStatus.style.color = '#10b981';
+              } else if (daysRemaining > 0) {
+                footerStatus.textContent = `⚠️ Expiring (${daysRemaining}d left)`;
+                footerStatus.style.color = '#f59e0b';
+              } else {
+                footerStatus.textContent = '❌ Expired';
+                footerStatus.style.color = '#ef4444';
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error updating footer status:', e);
+        }
+      }
+
+      // ===== CHECK EXPIRATION WARNING =====
+      function checkExpirationWarning() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY_CONFIG);
+          if (saved) {
+            const config = JSON.parse(saved);
+            if (config.isValid && config.lastValidated) {
+              const validatedDate = new Date(config.lastValidated);
+              const expirationDate = new Date(validatedDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+              const now = new Date();
+              const daysRemaining = Math.ceil((expirationDate - now) / (1000 * 60 * 60 * 24));
+              
+              const warningBanner = document.getElementById('expirationWarning');
+              const warningText = document.getElementById('expirationWarningText');
+              
+              // Show warning if 2 days or less remaining
+              if (daysRemaining <= 2 && daysRemaining > 0 && warningBanner && warningText) {
+                warningText.textContent = `Your token will expire in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}. Re-validate to maintain access.`;
+                warningBanner.classList.add('show');
+              } else if (daysRemaining <= 0 && warningBanner && warningText) {
+                warningText.textContent = 'Your token has expired. Please re-validate immediately.';
+                warningBanner.classList.add('show');
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error checking expiration:', e);
+        }
+      }
+
       // ===== UNLOCK DASHBOARD =====
       function unlockDashboard() {
         lockScreen.classList.add('hidden');
         dashboardContent.classList.add('unlocked');
+        // Check if we should show expiration warning
+        checkExpirationWarning();
+        // Update footer token status
+        updateFooterTokenStatus();
       }
 
       // ===== UNLOCK BUTTON CLICK =====
@@ -2127,6 +2378,9 @@
       }
 
       // ===== INITIALIZE ALWAYS-RUN CODE =====
+      console.log('🚀 Bato Finance Dashboard v2.0 - GitHub Token Validation System');
+      console.log('✨ New features: Token expiration tracking, re-validation, status indicators');
+      
       setupGitHubModalControls();
       loadGitHubConfigToModal();
       createParticles();
@@ -2137,8 +2391,11 @@
       // If not validated, show lock screen and stop here
       if (!isValidated) {
         console.log('🔒 GitHub token not validated. Please configure to access dashboard.');
+        console.log('💡 Click "Configure GitHub Token" to get started');
         return; // Don't initialize dashboard
       }
+
+      console.log('✅ GitHub token validated - Dashboard unlocked');
 
       // ===== STATE (only if validated) =====
       let allBonuses = [];
@@ -2765,6 +3022,8 @@
             e.preventDefault();
             const modal = document.getElementById('githubModal');
             if (modal) modal.classList.add('show');
+            // Reload config to show updated expiration/status
+            loadGitHubConfigToModal();
             const timestamp = localStorage.getItem(STORAGE_KEY_TRIGGER);
             const lastTriggerModal = document.getElementById('lastTriggerModal');
             if (lastTriggerModal) {
