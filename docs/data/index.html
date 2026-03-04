@@ -1827,6 +1827,53 @@
             <div class="stat-label">Avg Bonus</div>
           </div>
         </div>
+
+        <!-- Crawler Metadata Section -->
+        <div class="crawler-metadata" style="margin-top: 2rem; padding: 1.5rem; background: rgba(124, 58, 237, 0.05); border-radius: 12px; border: 1px solid rgba(124, 58, 237, 0.2);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+            
+            <!-- 1. Last Trigger Python Crawler -->
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="font-size: 0.75rem; color: rgba(11, 30, 51, 0.6); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+                🎯 Last Trigger
+              </div>
+              <div id="lastTriggerTime" style="font-size: 0.9rem; color: rgba(11, 30, 51, 0.9); font-weight: 500;">
+                Never
+              </div>
+            </div>
+
+            <!-- 2. Last Crawling/Scraping -->
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="font-size: 0.75rem; color: rgba(11, 30, 51, 0.6); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+                🕷️ Last Crawling
+              </div>
+              <div id="lastCrawlingTime" style="font-size: 0.9rem; color: rgba(11, 30, 51, 0.9); font-weight: 500;">
+                Never
+              </div>
+            </div>
+
+            <!-- 3. Last Update -->
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="font-size: 0.75rem; color: rgba(11, 30, 51, 0.6); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+                🔄 Last Update
+              </div>
+              <div id="lastUpdateTime" style="font-size: 0.9rem; color: rgba(11, 30, 51, 0.9); font-weight: 500;">
+                Never
+              </div>
+            </div>
+
+            <!-- 4. Residential Proxy IP -->
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="font-size: 0.75rem; color: rgba(11, 30, 51, 0.6); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+                🌐 Proxy IP
+              </div>
+              <div id="proxyIP" style="font-size: 0.9rem; color: rgba(11, 30, 51, 0.9); font-weight: 500; font-family: monospace;">
+                Not available
+              </div>
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
 
