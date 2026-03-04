@@ -1829,49 +1829,26 @@
         </div>
 
         <!-- Crawler Metadata Section -->
-        <div class="crawler-metadata" style="margin-top: 2rem; padding: 1.5rem; background: rgba(124, 58, 237, 0.05); border-radius: 12px; border: 1px solid rgba(124, 58, 237, 0.2);">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-            
-            <!-- 1. Last Trigger Python Crawler -->
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-              <div style="font-size: 0.75rem; color: rgb(255, 255, 255); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
-                🎯 Last Trigger
-              </div>
-              <div id="lastTriggerTime" style="font-size: 0.9rem; color: rgb(255, 255, 255); font-weight: 500;">
-                Never
-              </div>
-            </div>
-
-            <!-- 2. Last Crawling/Scraping -->
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-              <div style="font-size: 0.75rem; color: rgb(255, 255, 255); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
-                🕷️ Last Crawling
-              </div>
-              <div id="lastCrawlingTime" style="font-size: 0.9rem; color: rgb(255, 255, 255); font-weight: 500;">
-                Never
-              </div>
-            </div>
-
-            <!-- 3. Last Update -->
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-              <div style="font-size: 0.75rem; color: rgb(255, 255, 255); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
-                🔄 Last Update
-              </div>
-              <div id="lastUpdateTime" style="font-size: 0.9rem; color: rgb(255, 255, 255); font-weight: 500;">
-                Never
-              </div>
-            </div>
-
-            <!-- 4. Residential Proxy IP -->
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-              <div style="font-size: 0.75rem; color: rgb(255, 255, 255); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
-                🌐 Proxy IP
-              </div>
-              <div id="proxyIP" style="font-size: 0.9rem; color: rgb(255, 255, 255); font-weight: 500; font-family: monospace;">
-                Not available
-              </div>
-            </div>
-
+        <div class="stats-grid" style="margin-top: 1.5rem;">
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-value" id="lastTriggerTime">Never</div>
+            <div class="stat-label">Last Trigger</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🕷️</div>
+            <div class="stat-value" id="lastCrawlingTime">Never</div>
+            <div class="stat-label">Last Crawling</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-value" id="lastUpdateTime">Never</div>
+            <div class="stat-label">Last Update</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🌐</div>
+            <div class="stat-value" id="proxyIP" style="font-family: monospace; font-size: 1.1rem;">N/A</div>
+            <div class="stat-label">Proxy IP</div>
           </div>
         </div>
       </div>
@@ -2637,17 +2614,44 @@
 
       // ===== UPDATE CRAWLER METADATA =====
       function updateCrawlerMetadata(data) {
+        // Helper function to format date/time compactly
+        function formatDateTime(timestamp) {
+          const date = new Date(timestamp);
+          const now = new Date();
+          const diffMs = now - date;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+          
+          // If less than 1 hour ago, show "X mins ago"
+          if (diffMins < 60) {
+            return diffMins <= 1 ? 'Just now' : `${diffMins}m ago`;
+          }
+          // If less than 24 hours ago, show "X hours ago"
+          else if (diffHours < 24) {
+            return diffHours === 1 ? '1h ago' : `${diffHours}h ago`;
+          }
+          // If less than 7 days ago, show "X days ago"
+          else if (diffDays < 7) {
+            return diffDays === 1 ? '1d ago' : `${diffDays}d ago`;
+          }
+          // Otherwise show compact date
+          else {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }
+        }
+        
         // 1. Last Trigger Time - from metadata or localStorage
         const lastTriggerEl = document.getElementById('lastTriggerTime');
         if (lastTriggerEl) {
           const triggerTime = data.metadata?.lastTriggerTime || data.lastTriggerTime;
           if (triggerTime) {
-            lastTriggerEl.textContent = new Date(triggerTime).toLocaleString();
+            lastTriggerEl.textContent = formatDateTime(triggerTime);
           } else {
             // Try to get from localStorage
             const storedTrigger = localStorage.getItem('bato_last_github_trigger');
             if (storedTrigger) {
-              lastTriggerEl.textContent = new Date(parseInt(storedTrigger)).toLocaleString();
+              lastTriggerEl.textContent = formatDateTime(parseInt(storedTrigger));
             } else {
               lastTriggerEl.textContent = 'Never';
             }
@@ -2659,7 +2663,7 @@
         if (lastCrawlingEl) {
           const crawlingTime = data.metadata?.lastCrawlingTime || data.lastCrawlingTime || data.scraper?.lastRun;
           if (crawlingTime) {
-            lastCrawlingEl.textContent = new Date(crawlingTime).toLocaleString();
+            lastCrawlingEl.textContent = formatDateTime(crawlingTime);
           } else {
             lastCrawlingEl.textContent = 'Never';
           }
@@ -2670,7 +2674,7 @@
         if (lastUpdateEl) {
           const updateTime = data.metadata?.lastUpdateTime || data.lastUpdated;
           if (updateTime) {
-            lastUpdateEl.textContent = new Date(updateTime).toLocaleString();
+            lastUpdateEl.textContent = formatDateTime(updateTime);
           } else {
             lastUpdateEl.textContent = 'Never';
           }
@@ -2698,7 +2702,7 @@
           if (proxyIP && proxyIP !== 'Unknown') {
             proxyIPEl.textContent = proxyIP;
           } else {
-            proxyIPEl.textContent = 'Not available';
+            proxyIPEl.textContent = 'N/A';
           }
         }
       }
