@@ -1837,7 +1837,7 @@
               <div style="font-size: 0.75rem; color: rgb(255, 255, 255); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
                 🎯 Last Trigger
               </div>
-              <div id="lastTriggerTime" style="font-size: 0.9rem; rgb(255, 255, 255); font-weight: 500;">
+              <div id="lastTriggerTime" style="font-size: 0.9rem; color: rgb(255, 255, 255); font-weight: 500;">
                 Never
               </div>
             </div>
@@ -2629,6 +2629,77 @@
 
         if (data.lastUpdated) {
           elements.lastUpdated.textContent = `Last updated: ${new Date(data.lastUpdated).toLocaleString()}`;
+        }
+
+        // Update crawler metadata fields
+        updateCrawlerMetadata(data);
+      }
+
+      // ===== UPDATE CRAWLER METADATA =====
+      function updateCrawlerMetadata(data) {
+        // 1. Last Trigger Time - from metadata or localStorage
+        const lastTriggerEl = document.getElementById('lastTriggerTime');
+        if (lastTriggerEl) {
+          const triggerTime = data.metadata?.lastTriggerTime || data.lastTriggerTime;
+          if (triggerTime) {
+            lastTriggerEl.textContent = new Date(triggerTime).toLocaleString();
+          } else {
+            // Try to get from localStorage
+            const storedTrigger = localStorage.getItem('bato_last_github_trigger');
+            if (storedTrigger) {
+              lastTriggerEl.textContent = new Date(parseInt(storedTrigger)).toLocaleString();
+            } else {
+              lastTriggerEl.textContent = 'Never';
+            }
+          }
+        }
+
+        // 2. Last Crawling/Scraping Time
+        const lastCrawlingEl = document.getElementById('lastCrawlingTime');
+        if (lastCrawlingEl) {
+          const crawlingTime = data.metadata?.lastCrawlingTime || data.lastCrawlingTime || data.scraper?.lastRun;
+          if (crawlingTime) {
+            lastCrawlingEl.textContent = new Date(crawlingTime).toLocaleString();
+          } else {
+            lastCrawlingEl.textContent = 'Never';
+          }
+        }
+
+        // 3. Last Update Time
+        const lastUpdateEl = document.getElementById('lastUpdateTime');
+        if (lastUpdateEl) {
+          const updateTime = data.metadata?.lastUpdateTime || data.lastUpdated;
+          if (updateTime) {
+            lastUpdateEl.textContent = new Date(updateTime).toLocaleString();
+          } else {
+            lastUpdateEl.textContent = 'Never';
+          }
+        }
+
+        // 4. Residential Proxy IP - from localStorage trigger metadata
+        const proxyIPEl = document.getElementById('proxyIP');
+        if (proxyIPEl) {
+          // First try to get from CDN data (Python crawler publishes this)
+          let proxyIP = data.metadata?.proxyIP || data.proxyIP || data.scraper?.proxyIP;
+          
+          // If not in CDN, get from localStorage (user who triggered the crawler)
+          if (!proxyIP) {
+            try {
+              const triggerMetadata = localStorage.getItem('bato_trigger_metadata');
+              if (triggerMetadata) {
+                const metadata = JSON.parse(triggerMetadata);
+                proxyIP = metadata.residentialProxyIP;
+              }
+            } catch (error) {
+              console.error('Failed to parse trigger metadata:', error);
+            }
+          }
+          
+          if (proxyIP && proxyIP !== 'Unknown') {
+            proxyIPEl.textContent = proxyIP;
+          } else {
+            proxyIPEl.textContent = 'Not available';
+          }
         }
       }
 
