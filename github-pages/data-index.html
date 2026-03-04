@@ -1846,9 +1846,9 @@
             <div class="stat-label">Last Update</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">🌐</div>
-            <div class="stat-value" id="proxyIP" style="font-family: monospace; font-size: 1.1rem;">N/A</div>
-            <div class="stat-label">Proxy IP</div>
+            <div class="stat-icon">✨</div>
+            <div class="stat-value" id="newBonuses">0</div>
+            <div class="stat-label">New Bonuses</div>
           </div>
         </div>
       </div>
@@ -2680,30 +2680,38 @@
           }
         }
 
-        // 4. Residential Proxy IP - from localStorage trigger metadata
-        const proxyIPEl = document.getElementById('proxyIP');
-        if (proxyIPEl) {
-          // First try to get from CDN data (Python crawler publishes this)
-          let proxyIP = data.metadata?.proxyIP || data.proxyIP || data.scraper?.proxyIP;
+        // 4. Total Newly Added Bonuses - track new bonuses from last crawl
+        const newBonusesEl = document.getElementById('newBonuses');
+        if (newBonusesEl) {
+          // Get newly added bonuses count from CDN metadata
+          let newBonusesCount = 0;
           
-          // If not in CDN, get from localStorage (user who triggered the crawler)
-          if (!proxyIP) {
+          // Try to get from CDN data (Python crawler publishes this)
+          if (data.metadata?.newBonusesAdded !== undefined) {
+            newBonusesCount = data.metadata.newBonusesAdded;
+          } else if (data.newBonusesAdded !== undefined) {
+            newBonusesCount = data.newBonusesAdded;
+          } else if (data.stats?.newBonuses !== undefined) {
+            newBonusesCount = data.stats.newBonuses;
+          } else {
+            // Fallback: Calculate by comparing current total with stored previous total
             try {
-              const triggerMetadata = localStorage.getItem('bato_trigger_metadata');
-              if (triggerMetadata) {
-                const metadata = JSON.parse(triggerMetadata);
-                proxyIP = metadata.residentialProxyIP;
+              const currentTotal = data.bonuses?.length || allBonuses.length || 0;
+              const storedPreviousTotal = localStorage.getItem('bato_previous_bonus_count');
+              
+              if (storedPreviousTotal) {
+                const previousTotal = parseInt(storedPreviousTotal);
+                newBonusesCount = Math.max(0, currentTotal - previousTotal);
               }
+              
+              // Store current total for next comparison
+              localStorage.setItem('bato_previous_bonus_count', currentTotal.toString());
             } catch (error) {
-              console.error('Failed to parse trigger metadata:', error);
+              console.error('Failed to calculate new bonuses:', error);
             }
           }
           
-          if (proxyIP && proxyIP !== 'Unknown') {
-            proxyIPEl.textContent = proxyIP;
-          } else {
-            proxyIPEl.textContent = 'N/A';
-          }
+          newBonusesEl.textContent = newBonusesCount.toLocaleString();
         }
       }
 
