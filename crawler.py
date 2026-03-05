@@ -1241,15 +1241,19 @@ def format_output(bonuses, crawl_start_time=None):
 
 def main():
     print("🕷️ Starting Bato Crawler...")
-    bonuses = scrape_all_bonuses()
-    output = format_output(bonuses)
-
-    # Write to output directory (create if not exists)
+    
+    # Scrape all bonuses and get the start timestamp
+    bonuses, crawl_start_time = scrape_all_bonuses()
+    
+    # Format output with metadata
+    output = format_output(bonuses, crawl_start_time)
+    
+    # Write to output directory
     import os
     os.makedirs("output", exist_ok=True)
     with open("output/bonuses.json", "w") as f:
         json.dump(output, f, indent=2)
-
+    
     print(f"\n✅ Done. Saved {len(bonuses)} bonuses to output/bonuses.json")
     print(f"💰 Total value: ${output['meta']['totalValue']:,}")
     print(f"📦 Output: output/bonuses.json")
