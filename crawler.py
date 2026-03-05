@@ -1151,6 +1151,9 @@ def scrape_all_bonuses():
     """
     Run all source parsers and collect bonuses, then transform to frontend format.
     """
+    # Record when crawling started (in milliseconds for JavaScript compatibility)
+    crawl_start_time = int(datetime.utcnow().timestamp() * 1000)
+    
     raw_bonuses = []
     total_sources = 0
     successful = 0
@@ -1203,12 +1206,17 @@ def scrape_all_bonuses():
 
     # Transform each bonus to frontend format
     transformed = [transform_bonus(b) for b in unique_raw]
-    return transformed
+    return transformed, crawl_start_time
 
-def format_output(bonuses):
+def format_output(bonuses, crawl_start_time=None):
     """Create the final JSON structure for the frontend."""
     categories = list(set(b['category'] for b in bonuses))
     total_value = sum(b['bonusAmount'] for b in bonuses)
+    
+    # Calculate timestamps
+    current_time = int(datetime.utcnow().timestamp() * 1000)  # milliseconds
+    crawl_start = crawl_start_time or current_time
+    
     return {
         "bonuses": bonuses,
         "lastUpdated": datetime.utcnow().isoformat() + "Z",
@@ -1216,6 +1224,14 @@ def format_output(bonuses):
         "version": int(datetime.utcnow().timestamp()),
         "categories": categories,
         "sources": list(set(b.get('bank') or b.get('platform') for b in bonuses)),
+        "metadata": {
+            "lastTriggerTime": crawl_start,  # When crawler was triggered
+            "lastCrawlingTime": current_time,  # When crawling finished
+            "lastUpdateTime": current_time,  # When data was last updated
+            "newBonusesAdded": len(bonuses),  # Total bonuses in this crawl
+            "totalValue": total_value,
+            "crawlerVersion": "1.0.0"
+        },
         "meta": {
             "disclaimer": "Bonus information is gathered from public sources. Please verify with the financial institution.",
             "crawlerVersion": "1.0.0",
