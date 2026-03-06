@@ -140,14 +140,22 @@ def extract_requirements(text):
 
 def parse_common_bonus(text, source_url, category):
     """Parse a single bonus line into structured data."""
-    bank_match = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s+\d|[\$:])', text)
+    # Strip leading numbers and dots (e.g., "1.1 ", "2.3 ", etc.)
+    cleaned_text = re.sub(r'^\d+\.\d+\s*', '', text)
+    
+    # Now try to match the bank name from the cleaned text
+    bank_match = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s+\d|[\$:])', cleaned_text)
     bank = bank_match.group(1).strip() if bank_match else "Unknown"
     bank = re.sub(r'[\.\:]+$', '', bank).strip()
+    
+    # If still unknown, try fallback on cleaned text
     if not bank or bank == "Unknown":
-        fallback = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s|$)', text)
+        fallback = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s|$)', cleaned_text)
         if fallback:
             bank = fallback.group(1).strip()
-    amount = extract_amount(text)
+    
+    amount = extract_amount(text)  # Keep original text for amount extraction
+    # ... rest of the function unchanged
 
     atype = "unknown"
     low = text.lower()
