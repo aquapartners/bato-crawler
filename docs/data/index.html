@@ -2322,18 +2322,51 @@
         // Save config
         if (saveBtn) {
           saveBtn.addEventListener('click', () => {
-            const config = {
-              token: tokenInput.value.trim(),
-              repo: repoInput.value.trim(),
-              workflowFile: workflowInput.value.trim(),
-              isValid: false,
-              lastValidated: null
-            };
-            localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-            tokenStatus.textContent = 'Configuration saved (not validated)';
-            tokenStatus.className = 'status-badge status-unknown';
-            modal.classList.remove('show');
-            showToast('Configuration saved');
+            // Check if the token has been validated
+            const currentConfig = localStorage.getItem(STORAGE_KEY_CONFIG);
+            let isValidated = false;
+            
+            if (currentConfig) {
+              try {
+                const parsed = JSON.parse(currentConfig);
+                isValidated = parsed.isValid === true;
+              } catch (e) {
+                console.error('Error parsing config:', e);
+              }
+            }
+            
+            // If token is validated, save and redirect to dashboard
+            if (isValidated) {
+              const config = {
+                token: tokenInput.value.trim(),
+                repo: repoInput.value.trim(),
+                workflowFile: workflowInput.value.trim(),
+                isValid: true,
+                lastValidated: Date.now()
+              };
+              localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
+              showToast('✅ Configuration saved! Redirecting to dashboard...');
+              
+              // Close modal and unlock dashboard
+              setTimeout(() => {
+                modal.classList.remove('show');
+                unlockDashboard();
+                updateFooterTokenStatus();
+              }, 1000);
+            } else {
+              // If not validated, save config but don't redirect
+              const config = {
+                token: tokenInput.value.trim(),
+                repo: repoInput.value.trim(),
+                workflowFile: workflowInput.value.trim(),
+                isValid: false,
+                lastValidated: null
+              };
+              localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
+              tokenStatus.textContent = '⚠️ Please validate token first';
+              tokenStatus.className = 'status-badge status-invalid';
+              showToast('⚠️ Configuration saved, but you must validate the token to access the dashboard');
+            }
           });
         }
 
