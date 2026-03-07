@@ -2322,14 +2322,19 @@
         // Save config
         if (saveBtn) {
           saveBtn.addEventListener('click', () => {
+            console.log('💾 Save Configuration clicked!');
+            
             // Check if the token has been validated
             const currentConfig = localStorage.getItem(STORAGE_KEY_CONFIG);
+            console.log('Current config from localStorage:', currentConfig);
+            
             let isValidated = false;
             
             if (currentConfig) {
               try {
                 const parsed = JSON.parse(currentConfig);
                 isValidated = parsed.isValid === true;
+                console.log('Token validation status:', isValidated, 'Full config:', parsed);
               } catch (e) {
                 console.error('Error parsing config:', e);
               }
@@ -2337,6 +2342,7 @@
             
             // If token is validated, save and redirect to dashboard
             if (isValidated) {
+              console.log('✅ Token is validated, saving and redirecting...');
               const config = {
                 token: tokenInput.value.trim(),
                 repo: repoInput.value.trim(),
@@ -2345,15 +2351,18 @@
                 lastValidated: Date.now()
               };
               localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
+              console.log('Config saved to localStorage');
               showToast('✅ Configuration saved! Redirecting to dashboard...');
               
               // Close modal and unlock dashboard
               setTimeout(() => {
+                console.log('Closing modal and unlocking dashboard...');
                 modal.classList.remove('show');
                 unlockDashboard();
                 updateFooterTokenStatus();
               }, 1000);
             } else {
+              console.log('⚠️ Token not validated, prompting user...');
               // If not validated, save config but don't redirect
               const config = {
                 token: tokenInput.value.trim(),
@@ -2368,6 +2377,8 @@
               showToast('⚠️ Configuration saved, but you must validate the token to access the dashboard');
             }
           });
+        } else {
+          console.error('❌ Save Configuration button not found!');
         }
 
         // Clear token (logout)
