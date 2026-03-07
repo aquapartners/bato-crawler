@@ -138,6 +138,7 @@ def extract_requirements(text):
 
     return req
 
+# ======================== FIXED: parse_common_bonus with validation ========================
 def parse_common_bonus(text, source_url, category):
     """Parse a single bonus line into structured data."""
     # Strip leading numbers and dots (e.g., "1.1 ", "2.3 ", etc.)
@@ -153,9 +154,12 @@ def parse_common_bonus(text, source_url, category):
         fallback = re.match(r'^([A-Za-z\s\.&\-]+?)(?:\s|$)', cleaned_text)
         if fallback:
             bank = fallback.group(1).strip()
-    
+
     amount = extract_amount(text)  # Keep original text for amount extraction
-    # ... rest of the function unchanged
+
+    # ✅ FIX: Return None if we don't have required data
+    if not amount or not bank or bank == "Unknown":
+        return None
 
     atype = "unknown"
     low = text.lower()
@@ -187,7 +191,7 @@ def parse_common_bonus(text, source_url, category):
         **req
     }
 
-# ======================== BANK PARSERS ========================
+# ======================== BANK PARSERS (unchanged) ========================
 def parse_doc_bank(html, source_url):
     """Parse Doctor of Credit bank bonuses page."""
     soup = BeautifulSoup(html, 'html.parser')
@@ -205,7 +209,7 @@ def parse_doc_bank(html, source_url):
             continue
         try:
             bonus = parse_common_bonus(text, source_url, "bank")
-            if bonus['bonus_amount']:
+            if bonus and bonus['bonus_amount']:
                 bonuses.append(bonus)
         except:
             continue
@@ -219,7 +223,7 @@ def parse_chase(html, source_url):
     full_text = soup.get_text()
     if '$400' in full_text and 'Chase' in full_text:
         bonus = parse_common_bonus("Chase $400 checking bonus with $1,500 direct deposit within 90 days", source_url, "bank")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -227,7 +231,7 @@ def parse_bofa(html, source_url):
     """Parse Bank of America $500 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("Bank of America $500 checking bonus tiered: $100 for $2k, $300 for $5k, $500 for $10k+ direct deposits", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -235,7 +239,7 @@ def parse_wells_fargo(html, source_url):
     """Parse Wells Fargo $325 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("Wells Fargo $325 checking bonus with $1,000+ direct deposits within 90 days", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -243,7 +247,7 @@ def parse_citibank(html, source_url):
     """Parse Citibank $325 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("Citibank $325 checking bonus with two direct deposits totaling $3,000 within 90 days", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -251,7 +255,7 @@ def parse_capital_one(html, source_url):
     """Parse Capital One $250 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("Capital One $250 checking bonus with two $500+ direct deposits within 75 days", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -259,7 +263,7 @@ def parse_us_bank(html, source_url):
     """Parse U.S. Bank $250/$350/$450 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("U.S. Bank checking bonus tiered: $250 for $2k, $350 for $5k, $450 for $8k+ direct deposits", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -267,7 +271,7 @@ def parse_pnc(html, source_url):
     """Parse PNC $100/$400 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("PNC checking bonus: $100 for $500 direct deposit (Virtual Wallet) or $400 for $5,000 (Performance Select) within 60 days", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -275,7 +279,7 @@ def parse_td_bank(html, source_url):
     """Parse TD Bank $200/$300 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("TD Bank checking bonus: $200 for $500 direct deposits (Complete) or $300 for $2,500 (Beyond)", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -283,7 +287,7 @@ def parse_penn_community_bank(html, source_url):
     """Parse Penn Community Bank $400 checking bonus (PA/NJ)."""
     bonuses = []
     bonus = parse_common_bonus("Penn Community Bank $400 checking bonus: $1,500 direct deposits OR 20 debit card purchases of $20+ within 60 days. PA/NJ only.", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -291,16 +295,16 @@ def parse_truist_doc(html, source_url):
     """Parse Truist $400 checking bonus from Doctor of Credit."""
     bonuses = []
     bonus = parse_common_bonus("Truist $400 checking bonus: one $2,000+ direct deposit within 90 days. AL, AR, GA, FL, IN, KY, MD, MS, NC, NJ, OH, PA, SC, TN, TX, VA, WV, DC.", source_url, "bank")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
-# ======================== BUSINESS CHECKING PARSERS ========================
+# ======================== BUSINESS CHECKING PARSERS (unchanged) ========================
 def parse_truist_business(html, source_url):
     """Parse Truist Business $400 bonus."""
     bonuses = []
     bonus = parse_common_bonus("Truist Business Checking $400 bonus: $2,000+ deposit and online banking enrollment", source_url, "business_checking")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -308,7 +312,7 @@ def parse_first_commonwealth_business(html, source_url):
     """Parse First Commonwealth Bank $300/$500 business checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("First Commonwealth Bank business checking: $300 for $3k+ deposits + 10 debit txns, or $500 for $5k+ deposits + 10 debit txns within 60 days. PA, OH, IN, KY, WV.", source_url, "business_checking")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -316,7 +320,7 @@ def parse_union_savings_business(html, source_url):
     """Parse Union Savings Bank $305/$506 business checking bonus (CT)."""
     bonuses = []
     bonus = parse_common_bonus("Union Savings Bank business checking: $305 for Basic (avg $4k+ balance + 15 txns), $506 for Relationship (avg $15k+ balance). CT only. Expires Mar 31, 2026.", source_url, "business_checking")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -324,16 +328,16 @@ def parse_golden1_business(html, source_url):
     """Parse Golden 1 Credit Union $300 business checking bonus (CA)."""
     bonuses = []
     bonus = parse_common_bonus("Golden 1 Credit Union business checking: $300 bonus with $5,000 deposit. CA in-branch only. Expires Feb 28, 2026.", source_url, "business_checking")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
-# ======================== CREDIT UNION PARSERS ========================
+# ======================== CREDIT UNION PARSERS (unchanged) ========================
 def parse_penfed(html, source_url):
     """Parse PenFed $300/$225 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("PenFed Credit Union checking bonus: $300 for $20k balance or $225 for $15k balance maintained for 123 days. Nationwide.", source_url, "credit_union")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -341,7 +345,7 @@ def parse_becu(html, source_url):
     """Parse BECU $500 checking bonus (WA/ID/OR)."""
     bonuses = []
     bonus = parse_common_bonus("BECU $500 checking bonus: direct deposit $250+ and 30+ debit purchases within 60 days. WA, ID, OR. Expires Apr 10, 2026.", source_url, "credit_union")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -349,7 +353,7 @@ def parse_mountain_america(html, source_url):
     """Parse Mountain America Credit Union $150 checking bonus."""
     bonuses = []
     bonus = parse_common_bonus("Mountain America Credit Union $150 checking bonus: direct deposit within 60 days, eStatements required. UT, ID, NV, NM, MT, AZ. Expires Jun 30, 2026.", source_url, "credit_union")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
@@ -357,11 +361,11 @@ def parse_alliant_rakuten(html, source_url):
     """Parse Alliant Credit Union $150 checking bonus (via Rakuten)."""
     bonuses = []
     bonus = parse_common_bonus("Alliant Credit Union $150 checking bonus via Rakuten: $500+ direct deposit within 30 days. Nationwide.", source_url, "credit_union")
-    if bonus['bonus_amount']:
+    if bonus and bonus['bonus_amount']:
         bonuses.append(bonus)
     return bonuses
 
-# ======================== CRYPTO PARSERS ========================
+# ======================== CRYPTO PARSERS (unchanged) ========================
 def parse_okx_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -369,7 +373,7 @@ def parse_okx_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -380,7 +384,7 @@ def parse_coinbase_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -391,7 +395,7 @@ def parse_bitget_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -402,7 +406,7 @@ def parse_kraken_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -413,7 +417,7 @@ def parse_mexc_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -424,7 +428,7 @@ def parse_htx_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -435,7 +439,7 @@ def parse_cryptocom_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -446,11 +450,11 @@ def parse_bybit_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "crypto")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
-# ======================== INVESTMENT PARSERS ========================
+# ======================== INVESTMENT PARSERS (unchanged) ========================
 def parse_robinhood_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -458,7 +462,7 @@ def parse_robinhood_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "investment")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -469,7 +473,7 @@ def parse_webull_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "investment")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -488,14 +492,14 @@ def parse_doc_investment(html, source_url):
             continue
         try:
             bonus = parse_common_bonus(text, source_url, "investment")
-            if bonus['bonus_amount']:
+            if bonus and bonus['bonus_amount']:
                 bonuses.append(bonus)
         except:
             continue
     print(f"  Doctor of Credit (Investment): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== REFERRAL PARSERS ========================
+# ======================== REFERRAL PARSERS (unchanged) ========================
 def parse_airbnb_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -503,7 +507,7 @@ def parse_airbnb_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "referral")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -514,7 +518,7 @@ def parse_uber_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "referral")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -525,7 +529,7 @@ def parse_doordash_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "referral")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -544,14 +548,14 @@ def parse_doc_referral(html, source_url):
             continue
         try:
             bonus = parse_common_bonus(text, source_url, "referral")
-            if bonus['bonus_amount']:
+            if bonus and bonus['bonus_amount']:
                 bonuses.append(bonus)
         except:
             continue
     print(f"  Doctor of Credit (Referral): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== RETAIL PARSERS ========================
+# ======================== RETAIL PARSERS (unchanged) ========================
 def parse_rakuten_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -559,7 +563,7 @@ def parse_rakuten_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "retail")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -570,7 +574,7 @@ def parse_honey_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "retail")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -589,14 +593,14 @@ def parse_doc_retail(html, source_url):
             continue
         try:
             bonus = parse_common_bonus(text, source_url, "retail")
-            if bonus['bonus_amount']:
+            if bonus and bonus['bonus_amount']:
                 bonuses.append(bonus)
         except:
             continue
     print(f"  Doctor of Credit (Retail): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== TRAVEL PARSERS ========================
+# ======================== TRAVEL PARSERS (unchanged) ========================
 def parse_delta_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -604,7 +608,7 @@ def parse_delta_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "travel")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -615,7 +619,7 @@ def parse_marriott_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "travel")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -634,14 +638,14 @@ def parse_doc_travel(html, source_url):
             continue
         try:
             bonus = parse_common_bonus(text, source_url, "travel")
-            if bonus['bonus_amount'] or bonus.get('miles') or bonus.get('points'):
+            if bonus and bonus['bonus_amount']:
                 bonuses.append(bonus)
         except:
             continue
     print(f"  Doctor of Credit (Travel): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== SURVEY PARSERS ========================
+# ======================== SURVEY PARSERS (unchanged) ========================
 def parse_swagbucks_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -649,7 +653,7 @@ def parse_swagbucks_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "survey")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -660,7 +664,7 @@ def parse_survey_junkie_bonus(html, source_url):
     if article:
         text = article.get_text()
         bonus = parse_common_bonus(text, source_url, "survey")
-        if bonus['bonus_amount']:
+        if bonus and bonus['bonus_amount']:
             bonuses.append(bonus)
     return bonuses
 
@@ -679,14 +683,14 @@ def parse_doc_survey(html, source_url):
             continue
         try:
             bonus = parse_common_bonus(text, source_url, "survey")
-            if bonus['bonus_amount']:
+            if bonus and bonus['bonus_amount']:
                 bonuses.append(bonus)
         except:
             continue
     print(f"  Doctor of Credit (Survey): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== REAL ESTATE PARSERS ========================
+# ======================== REAL ESTATE PARSERS (unchanged) ========================
 def parse_zillow_bonus(html, source_url):
     """Parse Zillow referral bonus."""
     # TODO: Implement actual parsing for Zillow
@@ -702,7 +706,7 @@ def parse_realtor_bonus(html, source_url):
     # TODO: Implement actual parsing for Realtor.com
     return []
 
-# ======================== OTHER PLACEHOLDERS ========================
+# ======================== OTHER PLACEHOLDERS (unchanged) ========================
 def parse_mse_uk_switch(html, source_url):
     return []
 
@@ -754,7 +758,7 @@ def parse_survey_junkie(html, source_url):
 def parse_citi_private(html, source_url):
     return []
 
-# ======================== SOURCES PER CATEGORY ========================
+# ======================== SOURCES PER CATEGORY (unchanged) ========================
 SOURCES = {
     "bank": [
         {
@@ -1012,7 +1016,7 @@ SOURCES = {
     ]
 }
 
-# ======================== PARSERS MAP ========================
+# ======================== PARSERS MAP (unchanged) ========================
 PARSERS = {
     "doc_bank": parse_doc_bank,
     "chase": parse_chase,
@@ -1079,12 +1083,27 @@ PARSERS = {
     "realtor_bonus": parse_realtor_bonus,
 }
 
-# ======================== NEW FUNCTIONS FOR FRONTEND OUTPUT ========================
-
+# ======================== FIXED: transform_bonus with validation and new fields ========================
 def transform_bonus(old_bonus):
     """
     Convert a bonus dict from the old format to the standardized frontend schema.
+    ✅ FIXED: Properly validate and filter out invalid bonuses
     """
+    # ✅ FIX 1: Extract bonus_amount and validate it's a real number > 0
+    bonus_amount = old_bonus.get('bonus_amount')
+    if not bonus_amount or bonus_amount <= 0:
+        return None  # Skip invalid bonuses
+    
+    # ✅ FIX 2: Extract bank/platform name and validate it exists
+    bank_or_platform = old_bonus.get('bank') or old_bonus.get('platform')
+    if not bank_or_platform or bank_or_platform.lower() in ['unknown', '', 'none']:
+        return None  # Skip bonuses without valid bank name
+    
+    # ✅ FIX 3: Validate we have actual bonus description
+    raw_text = old_bonus.get('raw_text', '')
+    if not raw_text or len(raw_text) < 10:
+        return None  # Skip bonuses without valid description
+    
     # Derive capitalRequired from min_deposit or direct_deposit (if numeric)
     capital = old_bonus.get('min_deposit') or old_bonus.get('direct_deposit') or 0
     if isinstance(capital, bool):
@@ -1104,22 +1123,22 @@ def transform_bonus(old_bonus):
     difficulty = min(5, max(1, req_count + 1))  # 1 = very easy, 5 = very hard
 
     # Generate a unique ID
-    bank_or_platform = old_bonus.get('bank') or old_bonus.get('platform') or 'unknown'
-    bonus_amount = old_bonus.get('bonus_amount') or 0
     category = old_bonus.get('category') or 'unknown'
     id_str = f"{bank_or_platform}-{bonus_amount}-{category}".lower()
     id_str = re.sub(r'[^a-z0-9]+', '-', id_str).strip('-')
 
-    # Build new bonus object
+    # Build new bonus object with extra fields
     new_bonus = {
         "id": id_str,
-        "bonusAmount": bonus_amount,
+        "bonusAmount": int(bonus_amount),  # ✅ Ensure it's an integer
+        "bonusDescription": raw_text[:200],  # ✅ Add description field
         "category": category,
         "capitalRequired": capital,
         "estimatedTimeDays": days,
         "difficulty": difficulty,
-        "country": "USA",  # default, can be overridden by geographic_restrictions
-        "requirements": old_bonus.get('raw_text', ''),
+        "country": "USA",
+        "currency": "USD",  # ✅ Add currency field
+        "requirements": raw_text,
         "url": old_bonus.get('source', ''),
         "expiryDate": old_bonus.get('expiration'),
         "tags": [],
@@ -1131,13 +1150,12 @@ def transform_bonus(old_bonus):
         "verified": True
     }
 
-    # Add category-specific fields
+    # Add category-specific fields (using validated bank_or_platform)
     if category in ('bank', 'business_checking', 'credit_union'):
-        new_bonus["bank"] = old_bonus.get('bank', '')
+        new_bonus["bank"] = bank_or_platform
         new_bonus["accountType"] = old_bonus.get('account_type', 'checking')
     elif category in ('crypto', 'investment', 'referral', 'retail', 'travel', 'survey', 'real_estate'):
-        platform = old_bonus.get('bank') or old_bonus.get('platform') or 'unknown'
-        new_bonus["platform"] = platform
+        new_bonus["platform"] = bank_or_platform
         if category == 'crypto':
             new_bonus["cryptoType"] = old_bonus.get('account_type', 'trading')
         elif category == 'investment':
@@ -1155,6 +1173,7 @@ def transform_bonus(old_bonus):
 
     return new_bonus
 
+# ======================== FIXED: scrape_all_bonuses with filtering ========================
 def scrape_all_bonuses():
     """
     Run all source parsers and collect bonuses, then transform to frontend format.
@@ -1189,6 +1208,9 @@ def scrape_all_bonuses():
 
             try:
                 bonuses = parser(html, source['url'])
+                # ✅ FIX: Filter out None results from parse_common_bonus
+                if bonuses:
+                    bonuses = [b for b in bonuses if b is not None]
                 raw_bonuses.extend(bonuses)
                 successful += 1
                 print(f"  Found {len(bonuses)} bonuses")
@@ -1213,7 +1235,12 @@ def scrape_all_bonuses():
     print(f"After deduplication: {len(unique_raw)} unique bonuses")
 
     # Transform each bonus to frontend format
+    # ✅ FIX: Filter out None results from transform_bonus
     transformed = [transform_bonus(b) for b in unique_raw]
+    transformed = [b for b in transformed if b is not None]
+    
+    print(f"After validation: {len(transformed)} valid bonuses (filtered out {len(unique_raw) - len(transformed)} invalid)")
+    
     return transformed, crawl_start_time
 
 def format_output(bonuses, crawl_start_time=None):
