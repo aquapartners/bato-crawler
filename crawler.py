@@ -1057,7 +1057,7 @@ def transform_bonus(old_bonus):
     
     # Reject bank names whose first word is a common stopword (junk entries)
     common_stopwords_first_word = {
-        'can', 'just', 'there', 'this', 'has', 'was', 'two', 'one', 'direct', 'requires', 'deposit', 
+        'can', 'just', 'there', 'Up To', 'this', 'has', 'was', 'two', 'one', 'direct', 'requires', 'deposit', 
         'bonus', 'offer', 'previously', 'also', 'and', 'the', 'but', 'not', 'so', 'if', 'such', 'as', 
         'at', 'by', 'for', 'from', 'in', 'into', 'of', 'on', 'to', 'with', 'about', 'above', 'across', 
         'after', 'against', 'along', 'among', 'around', 'before', 'behind', 'below', 'beneath', 'beside', 
