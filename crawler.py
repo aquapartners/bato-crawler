@@ -1080,6 +1080,14 @@ def fetch_known_banks():
 
 KNOWN_BANKS = fetch_known_banks()
 
+# ======================== BANK SUFFIXES (to identify valid names) ========================
+BANK_SUFFIXES = {
+    'bank', 'banks', 'credit union', 'financial', 'trust', 'savings', 'federal',
+    'community', 'national', 'state', 'cooperative', 'building society', 'banco',
+    'bancorp', 'group', 'holdings', 'plc', 'ltd', 'limited', 'incorporated', 'inc',
+    'association', 'fund', 'capital', 'partners', 'asset management', 'wealth'
+}
+
 # ======================== STOPWORD SET (for fallback cleanup) ========================
 COMMON_STOPWORDS_FIRST_WORD = {
     'can', 'just', 'there', 'this', 'has', 'was', 'two', 'one', 'direct', 'requires', 'deposit', 
@@ -1094,23 +1102,19 @@ COMMON_STOPWORDS_FIRST_WORD = {
     'my', 'your', 'no', 'yes'
 }
 
-# ======================== HYBRID TRANSFORM BONUS ========================
+# ======================== ENHANCED TRANSFORM BONUS ========================
 def transform_bonus(old_bonus):
     """
     Convert a bonus dict from the old format to the standardized frontend schema.
-    Uses a hybrid approach:
-      1. Try to find a known bank name (from Wikipedia list) in the raw text or extracted candidate.
-      2. If found, use that as the canonical name.
-      3. If not, clean the candidate by removing common descriptive phrases.
-      4. If the cleaned candidate starts with a stopword, reject it (likely junk).
-      5. Otherwise, use the cleaned candidate.
+    Enhanced bank name extraction:
+      1. Try to find a known bank name (from Wikipedia) as a substring in the raw text.
+      2. If not, clean the parsed candidate aggressively and check for bank‑like suffixes.
     """
     # Validate bonus amount
     bonus_amount = old_bonus.get('bonus_amount')
     if not bonus_amount or bonus_amount <= 0:
         return None
     
-    # Validate raw text length
     raw_text = old_bonus.get('raw_text', '')
     if not raw_text or len(raw_text) < 10:
         return None
@@ -1118,29 +1122,54 @@ def transform_bonus(old_bonus):
     # Candidate bank name from parser
     candidate = old_bonus.get('bank') or old_bonus.get('platform') or ''
     candidate_lower = candidate.lower()
+    raw_lower = raw_text.lower()
 
-    # 1. Try to match against known banks (longest match wins)
+    # 1. Look for a known bank name as a substring in the raw text (longest match wins)
     best_match = None
     max_len = 0
     for bank in KNOWN_BANKS:
-        if bank in candidate_lower or bank in raw_text.lower():
+        if bank in raw_lower:
             if len(bank) > max_len:
                 max_len = len(bank)
-                best_match = bank.title()  # restore proper case
-
+                best_match = bank
     if best_match:
-        bank_or_platform = best_match
+        bank_or_platform = best_match.title()
     else:
-        # 2. Fallback: clean the candidate by removing common stopword phrases at the beginning
-        cleaned = re.sub(r'^(?:can|just|there|this|has|was|two|one|direct|requires|deposit|bonus|offer|previously|also|and|the|but|not|so|if)\s+', '', candidate, flags=re.IGNORECASE)
-        cleaned = cleaned.strip()
-        # If cleaned is too short or still starts with a stopword, reject
-        first_word = cleaned.split()[0].lower() if cleaned else ''
-        if len(cleaned) < 3 or first_word in COMMON_STOPWORDS_FIRST_WORD:
-            return None
-        bank_or_platform = cleaned
+        # 2. Clean the candidate: remove leading descriptive phrases
+        # Common phrases to strip (case‑insensitive)
+        phrases_to_remove = [
+            r'^(?:can|just|there|this|has|was|two|one|direct|requires|deposit|bonus|offer|previously|also|and|the|but|not|so|if)\s+',
+            r'^(?:up to|up to the|fund up to|funding|fund|get|need to|require|required|with|by|for|from|in|into|of|on|to)\s+',
+            # The following line is commented because these words are part of bank names, but we may still want to remove them if they are isolated at the beginning
+            # r'^(?:bank|credit union|financial|trust|savings|federal|community|national|state)\s+',
+        ]
+        cleaned = candidate
+        for pattern in phrases_to_remove:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE).strip()
+        # Also remove trailing words like "bonus", "referral", etc.
+        cleaned = re.sub(r'\s+(?:bonus|referral|offer|signup|account|checking|savings|business|personal)$', '', cleaned, flags=re.IGNORECASE).strip()
+        
+        # Check if cleaned contains a bank‑like suffix
+        contains_bank_suffix = any(suffix in cleaned.lower() for suffix in BANK_SUFFIXES)
+        # Also check if the cleaned string itself is a known bank (maybe partial)
+        if not contains_bank_suffix:
+            # Try to see if any word in cleaned is a known bank (e.g., "Chase" alone)
+            words = cleaned.split()
+            for word in words:
+                if word.lower() in KNOWN_BANKS:
+                    bank_or_platform = word
+                    break
+            else:
+                # No bank indicator → reject
+                return None
+        else:
+            bank_or_platform = cleaned
 
-    # Derive capitalRequired
+    # Now we have a cleaned bank_or_platform; ensure it's not too short
+    if len(bank_or_platform) < 3:
+        return None
+
+    # Derive capitalRequired, days, difficulty, etc. (same as before)
     capital = old_bonus.get('min_deposit') or old_bonus.get('direct_deposit') or 0
     if isinstance(capital, bool):
         capital = 0
@@ -1149,7 +1178,6 @@ def transform_bonus(old_bonus):
 
     days = old_bonus.get('holding_days') or 60
 
-    # Difficulty heuristic
     req_count = 0
     if old_bonus.get('min_deposit'): req_count += 1
     if old_bonus.get('direct_deposit'): req_count += 1
