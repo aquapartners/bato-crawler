@@ -1090,8 +1090,8 @@ BANK_SUFFIXES = {
 
 # ======================== STOPWORD SET (for fallback cleanup) ========================
 COMMON_STOPWORDS_FIRST_WORD = {
-    'can', 'just', 'there', 'this', 'has', 'was', 'two', 'one', 'direct', 'requires', 'deposit', 
-    'bonus', 'offer', 'previously', 'also', 'and', 'the', 'but', 'not', 'so', 'if', 'such', 'as', 
+    'can', 'just', 'there', 'this', 'has', 'was', 'two', 'No', 'monthly', 'fees', 'to', 'worry', 'about', 'recently', 'increased', 'from', 'direct', 'requires', 'deposit', 
+    'bonus', 'offer', 'previously', 'also', 'and', 'the', 'but', 'not', 'so', 'if', 'such', 'as', 'Sometimes', 'it', 'includes', 'or', 'something', 'similar', 'instead',
     'at', 'by', 'for', 'from', 'in', 'into', 'of', 'on', 'to', 'with', 'about', 'above', 'across', 
     'after', 'against', 'along', 'among', 'around', 'before', 'behind', 'below', 'beneath', 'beside', 
     'between', 'beyond', 'down', 'during', 'except', 'like', 'near', 'off', 'onto', 'out', 'outside', 
