@@ -997,24 +997,169 @@
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 0.625rem;
+      gap: 0.75rem;
+      padding: 0;
+      margin: 0;
     }
 
     .requirement-item {
       display: flex;
       align-items: start;
-      gap: 0.625rem;
-      font-size: 0.875rem;
+      gap: 0.875rem;
+      font-size: 0.9375rem;
       color: var(--foreground);
-      line-height: 1.5;
+      line-height: 1.6;
       font-weight: var(--font-weight-normal);
+      padding: 1rem 1.125rem;
+      background: linear-gradient(135deg, 
+        rgba(124, 58, 237, 0.04) 0%, 
+        rgba(37, 99, 235, 0.04) 100%);
+      border-radius: var(--radius-lg);
+      border-left: 3px solid var(--bato-green);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .requirement-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--gradient-primary);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .requirement-item:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+      background: linear-gradient(135deg, 
+        rgba(124, 58, 237, 0.08) 0%, 
+        rgba(37, 99, 235, 0.08) 100%);
+      border-left-color: var(--bato-purple-start);
+    }
+
+    .requirement-item:hover::before {
+      opacity: 1;
+    }
+
+    .requirement-item:hover .requirement-icon {
+      transform: scale(1.2) rotate(10deg);
     }
 
     .requirement-icon {
       color: var(--bato-green);
-      font-size: 1rem;
+      font-size: 1.25rem;
       margin-top: 0.125rem;
       flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.15) 0%, 
+        rgba(16, 185, 129, 0.08) 100%);
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+    }
+
+    .requirement-item:hover .requirement-icon {
+      background: var(--bato-green);
+      color: white;
+      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Alternative styles for different requirement priorities */
+    .requirement-item.priority-high {
+      border-left-color: var(--bato-purple-start);
+      background: linear-gradient(135deg, 
+        rgba(124, 58, 237, 0.06) 0%, 
+        rgba(37, 99, 235, 0.06) 100%);
+    }
+
+    .requirement-item.priority-high .requirement-icon {
+      background: linear-gradient(135deg, 
+        rgba(124, 58, 237, 0.15) 0%, 
+        rgba(37, 99, 235, 0.15) 100%);
+      color: var(--bato-purple-start);
+    }
+
+    .requirement-item.priority-high:hover .requirement-icon {
+      background: var(--gradient-primary);
+      color: white;
+    }
+
+    .requirement-item.priority-medium {
+      border-left-color: var(--bato-gold);
+      background: linear-gradient(135deg, 
+        rgba(255, 215, 0, 0.04) 0%, 
+        rgba(255, 215, 0, 0.02) 100%);
+    }
+
+    .requirement-item.priority-medium .requirement-icon {
+      background: linear-gradient(135deg, 
+        rgba(255, 215, 0, 0.15) 0%, 
+        rgba(255, 215, 0, 0.08) 100%);
+      color: var(--bato-gold);
+      filter: brightness(0.8);
+    }
+
+    .requirement-item.priority-medium:hover .requirement-icon {
+      background: var(--bato-gold);
+      color: white;
+      filter: brightness(1);
+    }
+
+    /* Numbered requirements styling */
+    .requirement-item .req-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      background: var(--gradient-primary);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: var(--font-weight-medium);
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3);
+    }
+
+    /* Checked/completed requirements */
+    .requirement-item.completed {
+      opacity: 0.7;
+      background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.06) 0%, 
+        rgba(16, 185, 129, 0.03) 100%);
+      border-left-color: var(--bato-green);
+    }
+
+    .requirement-item.completed .requirement-icon {
+      background: var(--bato-green);
+      color: white;
+    }
+
+    /* Mobile responsive adjustments */
+    @media (max-width: 640px) {
+      .requirement-item {
+        padding: 0.875rem 1rem;
+        font-size: 0.875rem;
+      }
+
+      .requirement-icon {
+        font-size: 1.125rem;
+        width: 20px;
+        height: 20px;
+      }
     }
 
     .info-grid {
