@@ -818,14 +818,13 @@ def heuristic_extract_bonus(html: str, url: str) -> Optional[Dict]:
     except:
         return None
 
-    # Determine a plausible bank name: use page title first, then domain
+    # Determine a plausible bank name
     if page_title:
         # Often the title contains the bank name (e.g., "Chase Bank - Personal Banking")
         bank_guess = page_title.split('|')[0].split('-')[0].strip()
         if len(bank_guess) > 50:
             bank_guess = bank_guess[:50]
     else:
-        # Fallback to domain name
         from urllib.parse import urlparse
         domain = urlparse(url).netloc.replace('www.', '').split('.')[0]
         bank_guess = domain.title()
@@ -833,7 +832,7 @@ def heuristic_extract_bonus(html: str, url: str) -> Optional[Dict]:
     return {
         "bank": bank_guess,
         "bonus_amount": amount,
-        "raw_text": text[:2000],  # store first 2000 chars for later cleaning
+        "raw_text": text[:2000],  # store enough text for later cleaning
         "category": "unknown",
         "source": url,
         "scraped_at": datetime.utcnow().isoformat(),
