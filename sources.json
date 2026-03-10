@@ -1,0 +1,464 @@
+{
+  "sources": [
+    {
+      "name": "Doctor of Credit (US Banks)",
+      "url": "https://www.doctorofcredit.com/best-bank-account-bonuses/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "doc_bank"
+      }
+    },
+    {
+      "name": "Chase $400 Checking",
+      "url": "https://www.doctorofcredit.com/chase-300-checking-bonus-2/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "chase"
+      }
+    },
+    {
+      "name": "Bank of America $500 Checking",
+      "url": "https://www.doctorofcredit.com/bank-of-america-100-200-300-checking-bonus/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "bofa"
+      }
+    },
+    {
+      "name": "Wells Fargo $325 Checking",
+      "url": "https://www.doctorofcredit.com/wells-fargo-325-checking-bonus/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "wells_fargo"
+      }
+    },
+    {
+      "name": "Citibank $325 Checking",
+      "url": "https://www.doctorofcredit.com/citibank-325-checking-bonus/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "citibank"
+      }
+    },
+    {
+      "name": "Capital One $250 Checking",
+      "url": "https://www.doctorofcredit.com/capital-one-250-checking-bonus/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "capital_one"
+      }
+    },
+    {
+      "name": "U.S. Bank $250-$450 Checking",
+      "url": "https://www.doctorofcredit.com/u-s-bank-250-350-450-checking-bonus/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "us_bank"
+      }
+    },
+    {
+      "name": "PNC $100/$400 Checking",
+      "url": "https://www.doctorofcredit.com/pnc-200-300-400-checking-bonus/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "pnc"
+      }
+    },
+    {
+      "name": "TD Bank $200/$300 Checking",
+      "url": "https://www.doctorofcredit.com/td-bank-200-300-checking-bonus/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "td_bank"
+      }
+    },
+    {
+      "name": "Penn Community Bank $400 (PA/NJ)",
+      "url": "https://www.doctorofcredit.com/pa-only-penn-community-bank-350-checking-bonus-50-savings-direct-deposit-not-required/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "penn_community_bank"
+      }
+    },
+    {
+      "name": "Truist $400 Checking",
+      "url": "https://www.doctorofcredit.com/truist-300-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
+      "category": "bank",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "truist_doc"
+      }
+    },
+    {
+      "name": "Truist Business $400",
+      "url": "https://www.doctorofcredit.com/truist-200-business-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
+      "category": "business_checking",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "truist_business"
+      }
+    },
+    {
+      "name": "First Commonwealth $300-$500 Business",
+      "url": "https://www.doctorofcredit.com/24736-2/",
+      "category": "business_checking",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "first_commonwealth_business"
+      }
+    },
+    {
+      "name": "Union Savings Bank Business $305/$506",
+      "url": "https://www.doctorofcredit.com/ct-only-union-savings-bank-250-500-business-checking-bonus/",
+      "category": "business_checking",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "union_savings_business"
+      }
+    },
+    {
+      "name": "Golden 1 Credit Union $300 Business",
+      "url": "https://www.doctorofcredit.com/ca-in-branch-only-golden-1-credit-union-300-business-checking-bonus/",
+      "category": "business_checking",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "golden1_business"
+      }
+    },
+    {
+      "name": "PenFed $300/$225 Checking",
+      "url": "https://www.doctorofcredit.com/ymmv-penfed-300-checking-bonus/",
+      "category": "credit_union",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "penfed"
+      }
+    },
+    {
+      "name": "BECU $500 Checking",
+      "url": "https://www.doctorofcredit.com/wa-id-or-only-becu-400-checking-bonus/",
+      "category": "credit_union",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "becu"
+      }
+    },
+    {
+      "name": "Mountain America $150 Checking",
+      "url": "https://www.doctorofcredit.com/ut-id-nv-nm-mt-az-mountain-america-credit-union-150-checking-bonus/",
+      "category": "credit_union",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "mountain_america"
+      }
+    },
+    {
+      "name": "Alliant Credit Union $150 (Rakuten)",
+      "url": "https://www.doctorofcredit.com/rakuten-alliant-credit-union-100-10000-checking-bonus/",
+      "category": "credit_union",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "alliant_rakuten"
+      }
+    },
+    {
+      "name": "Robinhood $100/$500 Bonus",
+      "url": "https://www.doctorofcredit.com/robinhood-500-bonus/",
+      "category": "investment",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "robinhood_bonus"
+      }
+    },
+    {
+      "name": "Webull $1500+ Bonus",
+      "url": "https://www.doctorofcredit.com/webull-5000-bonus/",
+      "category": "investment",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "webull_bonus"
+      }
+    },
+    {
+      "name": "Doctor of Credit (Investment)",
+      "url": "https://www.doctorofcredit.com/category/investment-brokerage/",
+      "category": "investment",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "doc_investment"
+      }
+    },
+    {
+      "name": "Airbnb Referral Bonus",
+      "url": "https://www.doctorofcredit.com/airbnb-45-bonus-for-international-stays/",
+      "category": "referral",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "airbnb_bonus"
+      }
+    },
+    {
+      "name": "Uber Referral Bonus",
+      "url": "https://www.doctorofcredit.com/uber-15-bonus-uber-eats-25/",
+      "category": "referral",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "uber_bonus"
+      }
+    },
+    {
+      "name": "Doctor of Credit (Referral)",
+      "url": "https://www.doctorofcredit.com/category/referral-bonuses/",
+      "category": "referral",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "doc_referral"
+      }
+    },
+    {
+      "name": "DoorDash Referral Bonus",
+      "url": "https://www.doctorofcredit.com/doordash-10-off/",
+      "category": "referral",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "doordash_bonus"
+      }
+    },
+    {
+      "name": "Rakuten Cashback",
+      "url": "https://www.doctorofcredit.com/rakuten-30-bonus/",
+      "category": "retail",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "rakuten_bonus"
+      }
+    },
+    {
+      "name": "Honey (PayPal) Cashback",
+      "url": "https://www.doctorofcredit.com/honey-10-bonus/",
+      "category": "retail",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "honey_bonus"
+      }
+    },
+    {
+      "name": "Doctor of Credit (Retail/Cashback)",
+      "url": "https://www.doctorofcredit.com/category/cashback-portals/",
+      "category": "retail",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "doc_retail"
+      }
+    },
+    {
+      "name": "Delta SkyMiles Bonus",
+      "url": "https://www.doctorofcredit.com/delta-skymiles-50000-bonus/",
+      "category": "travel",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "delta_bonus"
+      }
+    },
+    {
+      "name": "Marriott Bonvoy Bonus",
+      "url": "https://www.doctorofcredit.com/marriott-bonvoy-50000-bonus/",
+      "category": "travel",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "marriott_bonus"
+      }
+    },
+    {
+      "name": "Doctor of Credit (Travel)",
+      "url": "https://www.doctorofcredit.com/category/travel-2/",
+      "category": "travel",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "doc_travel"
+      }
+    },
+    {
+      "name": "Swagbucks Signup Bonus",
+      "url": "https://www.doctorofcredit.com/swagbucks-10-bonus/",
+      "category": "survey",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "swagbucks_bonus"
+      }
+    },
+    {
+      "name": "Survey Junkie Bonus",
+      "url": "https://www.doctorofcredit.com/survey-junkie-5-bonus/",
+      "category": "survey",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "survey_junkie_bonus"
+      }
+    },
+    {
+      "name": "Doctor of Credit (Surveys/GPT)",
+      "url": "https://www.doctorofcredit.com/category/surveys-gpt/",
+      "category": "survey",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "doc_survey"
+      }
+    },
+    {
+      "name": "OKX Up to $10,000 Welcome Bonus",
+      "url": "https://www.doctorofcredit.com/okx-crypto-exchange-review-bonus/",
+      "category": "crypto",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "okx_bonus"
+      }
+    },
+    {
+      "name": "Coinbase Up to $200 Crypto Bonus",
+      "url": "https://www.doctorofcredit.com/coinbase-review-bonus/",
+      "category": "crypto",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "coinbase_bonus"
+      }
+    },
+    {
+      "name": "Bitget $5,000 Trial Fund + Rebates",
+      "url": "https://www.doctorofcredit.com/bitget-crypto-exchange-review-bonus/",
+      "category": "crypto",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "bitget_bonus"
+      }
+    },
+    {
+      "name": "Kraken 3% Deposit Match",
+      "url": "https://www.doctorofcredit.com/kraken-3-cash-crypto-deposit-match-18-month-hold/",
+      "category": "crypto",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "kraken_bonus"
+      }
+    },
+    {
+      "name": "MEXC Referral Ambassador Program",
+      "url": "https://www.mexc.com/en-TR/announcements/article/mexc-launches-the-referral-ambassador-program-17827791531306",
+      "category": "crypto",
+      "dynamic": true,
+      "extraction": {
+        "type": "custom",
+        "parser": "mexc_bonus"
+      }
+    },
+    {
+      "name": "HTX New Funds Bonus Trial",
+      "url": "https://www.htx.com/support/55024606728745",
+      "category": "crypto",
+      "dynamic": true,
+      "extraction": {
+        "type": "custom",
+        "parser": "htx_bonus"
+      }
+    },
+    {
+      "name": "Crypto.com VIP Referral Program",
+      "url": "https://crypto.com/sg/product-news/exchange-vip-referral-program",
+      "category": "crypto",
+      "dynamic": true,
+      "extraction": {
+        "type": "custom",
+        "parser": "cryptocom_bonus"
+      }
+    },
+    {
+      "name": "Bybit $1,000,000 Boost Battle",
+      "url": "https://announcements.bybit.com/article/boost-battle-x-tmgp-2026-series-1-trade-daily-grab-your-share-of-the-1-000-000-usdt-prize-pool--blt353d08203eb770b9/",
+      "category": "crypto",
+      "dynamic": true,
+      "extraction": {
+        "type": "custom",
+        "parser": "bybit_bonus"
+      }
+    },
+    {
+      "name": "Zillow Referral Bonus",
+      "url": "https://www.zillow.com/referral/",
+      "category": "real_estate",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "zillow_bonus"
+      }
+    },
+    {
+      "name": "Redfin Referral Bonus",
+      "url": "https://www.redfin.com/referral/",
+      "category": "real_estate",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "redfin_bonus"
+      }
+    },
+    {
+      "name": "Realtor.com Referral Bonus",
+      "url": "https://www.realtor.com/referral/",
+      "category": "real_estate",
+      "dynamic": false,
+      "extraction": {
+        "type": "custom",
+        "parser": "realtor_bonus"
+      }
+    }
+  ]
+}
