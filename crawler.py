@@ -801,29 +801,39 @@ def extract_with_selectors(html, extraction_rules, source_url, category):
 # ======================== HEURISTIC FALLBACK EXTRACTOR ========================
 def heuristic_extract_bonus(html: str, url: str) -> Optional[Dict]:
     soup = BeautifulSoup(html, 'html.parser')
+    # Get page title (if exists)
+    title_tag = soup.find('title')
+    page_title = title_tag.get_text(strip=True) if title_tag else ""
+    
+    # Extract all dollar amounts
     text = soup.get_text()
     amounts = re.findall(r'\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', text)
     if not amounts:
         return None
+    
+    # Take the first amount as the bonus
     amount_str = amounts[0].replace(',', '')
     try:
         amount = int(float(amount_str))
     except:
         return None
 
-    sentences = re.split(r'[.!?]', text)
-    context = ""
-    for sent in sentences:
-        if f"${amounts[0]}" in sent or f"$ {amounts[0]}" in sent:
-            context = sent.strip()
-            break
-    if not context:
-        context = text[:200]
+    # Determine a plausible bank name: use page title first, then domain
+    if page_title:
+        # Often the title contains the bank name (e.g., "Chase Bank - Personal Banking")
+        bank_guess = page_title.split('|')[0].split('-')[0].strip()
+        if len(bank_guess) > 50:
+            bank_guess = bank_guess[:50]
+    else:
+        # Fallback to domain name
+        from urllib.parse import urlparse
+        domain = urlparse(url).netloc.replace('www.', '').split('.')[0]
+        bank_guess = domain.title()
 
     return {
-        "bank": "Unknown (heuristic)",
+        "bank": bank_guess,
         "bonus_amount": amount,
-        "raw_text": context,
+        "raw_text": text[:2000],  # store first 2000 chars for later cleaning
         "category": "unknown",
         "source": url,
         "scraped_at": datetime.utcnow().isoformat(),
