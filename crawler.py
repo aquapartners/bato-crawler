@@ -279,7 +279,7 @@ def parse_common_bonus(text, source_url, category):
     }
 
 # ======================== ALL CUSTOM PARSERS ========================
-# (These are exactly as in your original code – copy them in full)
+# (These are exactly as in your original code)
 def parse_doc_bank(html, source_url):
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
@@ -798,29 +798,23 @@ def extract_with_selectors(html, extraction_rules, source_url, category):
             bonuses.append(bonus_dict)
     return bonuses
 
-# ======================== HEURISTIC FALLBACK EXTRACTOR ========================
+# ======================== AGGRESSIVE HEURISTIC EXTRACTOR ========================
 def heuristic_extract_bonus(html: str, url: str) -> Optional[Dict]:
     soup = BeautifulSoup(html, 'html.parser')
-    # Get page title (if exists)
     title_tag = soup.find('title')
     page_title = title_tag.get_text(strip=True) if title_tag else ""
     
-    # Extract all dollar amounts
     text = soup.get_text()
     amounts = re.findall(r'\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', text)
     if not amounts:
         return None
-    
-    # Take the first amount as the bonus
     amount_str = amounts[0].replace(',', '')
     try:
         amount = int(float(amount_str))
     except:
         return None
 
-    # Determine a plausible bank name
     if page_title:
-        # Often the title contains the bank name (e.g., "Chase Bank - Personal Banking")
         bank_guess = page_title.split('|')[0].split('-')[0].strip()
         if len(bank_guess) > 50:
             bank_guess = bank_guess[:50]
@@ -832,7 +826,7 @@ def heuristic_extract_bonus(html: str, url: str) -> Optional[Dict]:
     return {
         "bank": bank_guess,
         "bonus_amount": amount,
-        "raw_text": text[:2000],  # store enough text for later cleaning
+        "raw_text": text[:2000],
         "category": "unknown",
         "source": url,
         "scraped_at": datetime.utcnow().isoformat(),
@@ -900,6 +894,12 @@ CUSTOM_PARSERS = {
     "zillow_bonus": parse_zillow_bonus,
     "redfin_bonus": parse_redfin_bonus,
     "realtor_bonus": parse_realtor_bonus,
+}
+
+# ======================== DOMAIN‑BASED PARSER FALLBACK ========================
+DOMAIN_PARSERS = {
+    "doctorofcredit.com": "doc_bank",
+    # Add more domain → parser mappings here as needed
 }
 
 # ======================== KNOWN BANKS SET ========================
@@ -1131,6 +1131,7 @@ async def process_url(url: str, known_parsers: Dict) -> List[Dict]:
         if html is None:
             return []
 
+    # Check for exact match in sources.json
     source_config = None
     for src in load_sources():
         if src.get('url') == url:
@@ -1145,9 +1146,24 @@ async def process_url(url: str, known_parsers: Dict) -> List[Dict]:
         except Exception as e:
             print(f"Custom parser error for {url}: {e}")
             return []
-    else:
-        bonus = heuristic_extract_bonus(html, url)
-        return [bonus] if bonus else []
+
+    # Domain‑based fallback
+    from urllib.parse import urlparse
+    domain = urlparse(url).netloc.replace('www.', '')
+    if domain in DOMAIN_PARSERS:
+        parser_name = DOMAIN_PARSERS[domain]
+        parser = known_parsers.get(parser_name)
+        if parser:
+            try:
+                bonuses = parser(html, url)
+                if bonuses:
+                    return bonuses
+            except Exception as e:
+                print(f"Domain parser error for {url}: {e}")
+
+    # Fallback to heuristic
+    bonus = heuristic_extract_bonus(html, url)
+    return [bonus] if bonus else []
 
 # ======================== MAIN ORCHESTRATOR ========================
 async def run_autonomous_crawler():
