@@ -1,26 +1,117 @@
-import requests
-from bs4 import BeautifulSoup
+#!/usr/bin/env python3
+"""
+Autonomous Global Bonus Crawler
+--------------------------------
+- Discovers bonus pages from seed URLs via recursive crawling.
+- Respects robots.txt, rate limits, and domain scoping.
+- Extracts bonus information using custom parsers, CSS selectors, or heuristic fallback.
+- Outputs a unified JSON file using your existing transformation logic.
+"""
+
+import asyncio
 import json
 import re
 import time
-import asyncio
+import random
+import os
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
+from typing import Set, List, Dict, Optional, Tuple
+
+import requests
+from bs4 import BeautifulSoup
+import aiohttp
+from playwright.async_api import async_playwright
+import robotexclusionrulesparser
 
 # ======================== CRAWL4AI IMPORTS ========================
 from crawl4ai import AsyncWebCrawler
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, CacheMode
 
 # ======================== CONFIGURATION ========================
-DELAY = 2
+DELAY = 2  # seconds between requests to the same domain
+MAX_PAGES_PER_DOMAIN = 100
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 ]
 
-# ======================== ASYNC FETCH HELPERS ========================
-async def fetch_with_crawl4ai(url):
+# Seed domains to start discovery (expand this list as needed)
+SEED_URLS = [
+    # Major banks (from original seed list)
+    "https://www.chase.com",
+    "https://www.bankofamerica.com",
+    "https://www.wellsfargo.com",
+    "https://www.citi.com",
+    "https://www.capitalone.com",
+    "https://www.americanexpress.com",
+    # Ride-sharing & travel
+    "https://www.uber.com",
+    "https://www.airbnb.com",
+    "https://www.delta.com",
+    "https://www.marriott.com",
+    # Aggregator / news site (Doctor of Credit)
+    "https://www.doctorofcredit.com",
+    # Crypto exchanges (direct URLs from sources)
+    "https://www.mexc.com",
+    "https://www.htx.com",
+    "https://crypto.com",
+    "https://www.bybit.com",
+    # Real estate platforms
+    "https://www.zillow.com",
+    "https://www.redfin.com",
+    "https://www.realtor.com",
+]
+
+INCENTIVE_KEYWORDS = ["bonus", "referral", "incentive", "promotion", "reward", "cashback", "sign-up", "offer"]
+
+# ======================== ROBOTS.TXT CACHE ========================
+robots_parsers: Dict[str, robotexclusionrulesparser.RobotExclusionRulesParser] = {}
+
+async def can_fetch(url: str, user_agent: str = USER_AGENT) -> bool:
+    """Check robots.txt for the given URL."""
+    parsed = urlparse(url)
+    domain = f"{parsed.scheme}://{parsed.netloc}"
+    if domain not in robots_parsers:
+        rp = robotexclusionrulesparser.RobotExclusionRulesParser()
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{domain}/robots.txt", timeout=5) as resp:
+                    if resp.status == 200:
+                        rp.parse(await resp.text())
+                    else:
+                        rp.parse("")  # empty = allow everything
+        except Exception:
+            rp.parse("")  # on error, allow
+        robots_parsers[domain] = rp
+    return robots_parsers[domain].is_allowed(user_agent, url)
+
+# ======================== FETCH HELPERS ========================
+async def fetch_url_async(url: str) -> Optional[str]:
+    """Fetch a static page using aiohttp (async)."""
+    if not await can_fetch(url):
+        print(f"⚠️ robots.txt disallows {url}")
+        return None
+    headers = {'User-Agent': random.choice(USER_AGENTS)}
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=15) as resp:
+                if resp.status == 200:
+                    return await resp.text()
+                else:
+                    print(f"HTTP {resp.status} for {url}")
+                    return None
+    except Exception as e:
+        print(f"Error fetching {url}: {e}")
+        return None
+
+async def fetch_dynamic_async(url: str) -> Optional[str]:
+    """Fetch a dynamic page using crawl4ai (async)."""
+    if not await can_fetch(url):
+        print(f"⚠️ robots.txt disallows {url}")
+        return None
     browser_config = BrowserConfig(verbose=False, headless=True)
     run_config = CrawlerRunConfig(
         word_count_threshold=10,
@@ -35,25 +126,7 @@ async def fetch_with_crawl4ai(url):
             print(f"crawl4ai error for {url}: {result.error_message}")
             return None
 
-def fetch_dynamic(url):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(fetch_with_crawl4ai(url))
-    finally:
-        loop.close()
-
-def fetch_url(url):
-    headers = {'User-Agent': USER_AGENTS[hash(url) % len(USER_AGENTS)]}
-    try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        return response.text
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return None
-
-# ======================== EXTRACTION HELPERS ========================
+# ======================== ORIGINAL EXTRACTION HELPERS (from your code) ========================
 def extract_amount(text):
     match = re.search(r'\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', text)
     if match:
@@ -176,7 +249,7 @@ def parse_common_bonus(text, source_url, category):
         **req
     }
 
-# ======================== BANK PARSERS ========================
+# ======================== CUSTOM PARSERS (all your original ones) ========================
 def parse_doc_bank(html, source_url):
     soup = BeautifulSoup(html, 'html.parser')
     bonuses = []
@@ -273,7 +346,6 @@ def parse_truist_doc(html, source_url):
         bonuses.append(bonus)
     return bonuses
 
-# ======================== BUSINESS CHECKING PARSERS ========================
 def parse_truist_business(html, source_url):
     bonuses = []
     bonus = parse_common_bonus("Truist Business Checking $400 bonus: $2,000+ deposit and online banking enrollment", source_url, "business_checking")
@@ -302,7 +374,6 @@ def parse_golden1_business(html, source_url):
         bonuses.append(bonus)
     return bonuses
 
-# ======================== CREDIT UNION PARSERS ========================
 def parse_penfed(html, source_url):
     bonuses = []
     bonus = parse_common_bonus("PenFed Credit Union checking bonus: $300 for $20k balance or $225 for $15k balance maintained for 123 days. Nationwide.", source_url, "credit_union")
@@ -331,7 +402,6 @@ def parse_alliant_rakuten(html, source_url):
         bonuses.append(bonus)
     return bonuses
 
-# ======================== CRYPTO PARSERS ========================
 def parse_okx_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -420,7 +490,6 @@ def parse_bybit_bonus(html, source_url):
             bonuses.append(bonus)
     return bonuses
 
-# ======================== INVESTMENT PARSERS ========================
 def parse_robinhood_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -464,7 +533,6 @@ def parse_doc_investment(html, source_url):
     print(f"  Doctor of Credit (Investment): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== REFERRAL PARSERS ========================
 def parse_airbnb_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -519,7 +587,6 @@ def parse_doc_referral(html, source_url):
     print(f"  Doctor of Credit (Referral): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== RETAIL PARSERS ========================
 def parse_rakuten_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -563,7 +630,6 @@ def parse_doc_retail(html, source_url):
     print(f"  Doctor of Credit (Retail): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== TRAVEL PARSERS ========================
 def parse_delta_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -607,7 +673,6 @@ def parse_doc_travel(html, source_url):
     print(f"  Doctor of Credit (Travel): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== SURVEY PARSERS ========================
 def parse_swagbucks_bonus(html, source_url):
     bonuses = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -651,9 +716,7 @@ def parse_doc_survey(html, source_url):
     print(f"  Doctor of Credit (Survey): found {len(bonuses)} bonuses")
     return bonuses
 
-# ======================== REAL ESTATE PARSERS ========================
 def parse_zillow_bonus(html, source_url):
-    # TODO: Implement actual parsing for Zillow
     return []
 
 def parse_redfin_bonus(html, source_url):
@@ -662,318 +725,105 @@ def parse_redfin_bonus(html, source_url):
 def parse_realtor_bonus(html, source_url):
     return []
 
-# ======================== OTHER PLACEHOLDERS ========================
-def parse_mse_uk_switch(html, source_url):
-    return []
+# ======================== GENERIC SELECTOR EXTRACTOR ========================
+def extract_with_selectors(html, extraction_rules, source_url, category):
+    """
+    Generic extraction using CSS selectors defined in extraction_rules.
+    Returns a list of bonus dictionaries (raw, not transformed).
+    """
+    soup = BeautifulSoup(html, 'html.parser')
+    bonuses = []
+    container_selector = extraction_rules.get('container', 'body')
+    containers = soup.select(container_selector)
+    if not containers:
+        containers = [soup]
 
-def parse_nerdwallet_bank(html, source_url):
-    return []
+    for container in containers:
+        bonus_data = {}
+        valid = True
+        for field, rule in extraction_rules.get('fields', {}).items():
+            selector = rule['selector']
+            elem = container.select_one(selector)
+            if not elem:
+                valid = False
+                break
+            text = elem.get_text(strip=True)
+            if rule.get('type') == 'amount':
+                value = extract_amount(text)
+                if value is None:
+                    valid = False
+                    break
+                bonus_data[field] = value
+            elif rule.get('type') == 'date':
+                bonus_data[field] = text
+            else:
+                bonus_data[field] = text
+        if valid and bonus_data:
+            bonus_dict = {
+                "bank": bonus_data.get('bank', 'Unknown'),
+                "bonus_amount": bonus_data.get('bonus_amount', 0),
+                "raw_text": bonus_data.get('requirements', ''),
+                "category": category,
+                "source": source_url,
+                "scraped_at": datetime.utcnow().isoformat(),
+            }
+            if 'expiration' in bonus_data:
+                bonus_dict['expiration'] = bonus_data['expiration']
+            bonuses.append(bonus_dict)
+    return bonuses
 
-def parse_coinbase(html, source_url):
-    return []
+# ======================== HEURISTIC FALLBACK EXTRACTOR ========================
+def heuristic_extract_bonus(html: str, url: str) -> Optional[Dict]:
+    """
+    Fallback extraction for pages without a predefined parser/selector.
+    Looks for dollar amounts and nearby text.
+    """
+    soup = BeautifulSoup(html, 'html.parser')
+    text = soup.get_text()
+    amounts = re.findall(r'\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', text)
+    if not amounts:
+        return None
+    amount_str = amounts[0].replace(',', '')
+    try:
+        amount = int(float(amount_str))
+    except:
+        return None
 
-def parse_binance(html, source_url):
-    return []
+    sentences = re.split(r'[.!?]', text)
+    context = ""
+    for sent in sentences:
+        if f"${amounts[0]}" in sent or f"$ {amounts[0]}" in sent:
+            context = sent.strip()
+            break
+    if not context:
+        context = text[:200]
 
-def parse_crypto_com(html, source_url):
-    return []
+    return {
+        "bank": "Unknown (heuristic)",
+        "bonus_amount": amount,
+        "raw_text": context,
+        "category": "unknown",
+        "source": url,
+        "scraped_at": datetime.utcnow().isoformat(),
+        "notes": ["extracted heuristically"]
+    }
 
-def parse_robinhood(html, source_url):
-    return []
+# ======================== LOAD SOURCES ========================
+def load_sources():
+    """Load source definitions from sources.json (if exists)."""
+    config_path = os.path.join(os.path.dirname(__file__), 'sources.json')
+    if not os.path.exists(config_path):
+        return []
+    try:
+        with open(config_path, 'r') as f:
+            data = json.load(f)
+        return data.get('sources', [])
+    except Exception as e:
+        print(f"⚠️ Could not load sources.json: {e}")
+        return []
 
-def parse_webull(html, source_url):
-    return []
-
-def parse_airbnb(html, source_url):
-    return []
-
-def parse_uber(html, source_url):
-    return []
-
-def parse_doordash(html, source_url):
-    return []
-
-def parse_rakuten(html, source_url):
-    return []
-
-def parse_honey(html, source_url):
-    return []
-
-def parse_delta(html, source_url):
-    return []
-
-def parse_marriott(html, source_url):
-    return []
-
-def parse_swagbucks(html, source_url):
-    return []
-
-def parse_survey_junkie(html, source_url):
-    return []
-
-def parse_citi_private(html, source_url):
-    return []
-
-# ======================== SOURCES PER CATEGORY (FULL) ========================
-SOURCES = {
-    "bank": [
-        {
-            "name": "Doctor of Credit (US Banks)",
-            "url": "https://www.doctorofcredit.com/best-bank-account-bonuses/",
-            "parser": "doc_bank"
-        },
-        {
-            "name": "Chase $400 Checking",
-            "url": "https://www.doctorofcredit.com/chase-300-checking-bonus-2/",
-            "parser": "chase"
-        },
-        {
-            "name": "Bank of America $500 Checking",
-            "url": "https://www.doctorofcredit.com/bank-of-america-100-200-300-checking-bonus/",
-            "parser": "bofa"
-        },
-        {
-            "name": "Wells Fargo $325 Checking",
-            "url": "https://www.doctorofcredit.com/wells-fargo-325-checking-bonus/",
-            "parser": "wells_fargo"
-        },
-        {
-            "name": "Citibank $325 Checking",
-            "url": "https://www.doctorofcredit.com/citibank-325-checking-bonus/",
-            "parser": "citibank"
-        },
-        {
-            "name": "Capital One $250 Checking",
-            "url": "https://www.doctorofcredit.com/capital-one-250-checking-bonus/",
-            "parser": "capital_one"
-        },
-        {
-            "name": "U.S. Bank $250-$450 Checking",
-            "url": "https://www.doctorofcredit.com/u-s-bank-250-350-450-checking-bonus/",
-            "parser": "us_bank"
-        },
-        {
-            "name": "PNC $100/$400 Checking",
-            "url": "https://www.doctorofcredit.com/pnc-200-300-400-checking-bonus/",
-            "parser": "pnc"
-        },
-        {
-            "name": "TD Bank $200/$300 Checking",
-            "url": "https://www.doctorofcredit.com/td-bank-200-300-checking-bonus/",
-            "parser": "td_bank"
-        },
-        {
-            "name": "Penn Community Bank $400 (PA/NJ)",
-            "url": "https://www.doctorofcredit.com/pa-only-penn-community-bank-350-checking-bonus-50-savings-direct-deposit-not-required/",
-            "parser": "penn_community_bank"
-        },
-        {
-            "name": "Truist $400 Checking",
-            "url": "https://www.doctorofcredit.com/truist-300-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
-            "parser": "truist_doc"
-        }
-    ],
-    "business_checking": [
-        {
-            "name": "Truist Business $400",
-            "url": "https://www.doctorofcredit.com/truist-200-business-checking-bonus-al-ar-ga-fl-in-ky-md-ms-nc-nj-oh-pa-sc-tn-tx-va-wv-or-dc/",
-            "parser": "truist_business"
-        },
-        {
-            "name": "First Commonwealth $300-$500 Business",
-            "url": "https://www.doctorofcredit.com/24736-2/",
-            "parser": "first_commonwealth_business"
-        },
-        {
-            "name": "Union Savings Bank Business $305/$506",
-            "url": "https://www.doctorofcredit.com/ct-only-union-savings-bank-250-500-business-checking-bonus/",
-            "parser": "union_savings_business"
-        },
-        {
-            "name": "Golden 1 Credit Union $300 Business",
-            "url": "https://www.doctorofcredit.com/ca-in-branch-only-golden-1-credit-union-300-business-checking-bonus/",
-            "parser": "golden1_business"
-        }
-    ],
-    "credit_union": [
-        {
-            "name": "PenFed $300/$225 Checking",
-            "url": "https://www.doctorofcredit.com/ymmv-penfed-300-checking-bonus/",
-            "parser": "penfed"
-        },
-        {
-            "name": "BECU $500 Checking",
-            "url": "https://www.doctorofcredit.com/wa-id-or-only-becu-400-checking-bonus/",
-            "parser": "becu"
-        },
-        {
-            "name": "Mountain America $150 Checking",
-            "url": "https://www.doctorofcredit.com/ut-id-nv-nm-mt-az-mountain-america-credit-union-150-checking-bonus/",
-            "parser": "mountain_america"
-        },
-        {
-            "name": "Alliant Credit Union $150 (Rakuten)",
-            "url": "https://www.doctorofcredit.com/rakuten-alliant-credit-union-100-10000-checking-bonus/",
-            "parser": "alliant_rakuten"
-        }
-    ],
-    "investment": [
-        {
-            "name": "Robinhood $100/$500 Bonus",
-            "url": "https://www.doctorofcredit.com/robinhood-500-bonus/",
-            "parser": "robinhood_bonus"
-        },
-        {
-            "name": "Webull $1500+ Bonus",
-            "url": "https://www.doctorofcredit.com/webull-5000-bonus/",
-            "parser": "webull_bonus"
-        },
-        {
-            "name": "Doctor of Credit (Investment)",
-            "url": "https://www.doctorofcredit.com/category/investment-brokerage/",
-            "parser": "doc_investment"
-        }
-    ],
-    "referral": [
-        {
-            "name": "Airbnb Referral Bonus",
-            "url": "https://www.doctorofcredit.com/airbnb-45-bonus-for-international-stays/",
-            "parser": "airbnb_bonus"
-        },
-        {
-            "name": "Uber Referral Bonus",
-            "url": "https://www.doctorofcredit.com/uber-15-bonus-uber-eats-25/",
-            "parser": "uber_bonus"
-        },
-        {
-            "name": "Doctor of Credit (Referral)",
-            "url": "https://www.doctorofcredit.com/category/referral-bonuses/",
-            "parser": "doc_referral"
-        },
-        {
-            "name": "DoorDash Referral Bonus",
-            "url": "https://www.doctorofcredit.com/doordash-10-off/",
-            "parser": "doordash_bonus"
-        }
-    ],
-    "retail": [
-        {
-            "name": "Rakuten Cashback",
-            "url": "https://www.doctorofcredit.com/rakuten-30-bonus/",
-            "parser": "rakuten_bonus"
-        },
-        {
-            "name": "Honey (PayPal) Cashback",
-            "url": "https://www.doctorofcredit.com/honey-10-bonus/",
-            "parser": "honey_bonus"
-        },
-        {
-            "name": "Doctor of Credit (Retail/Cashback)",
-            "url": "https://www.doctorofcredit.com/category/cashback-portals/",
-            "parser": "doc_retail"
-        }
-    ],
-    "travel": [
-        {
-            "name": "Delta SkyMiles Bonus",
-            "url": "https://www.doctorofcredit.com/delta-skymiles-50000-bonus/",
-            "parser": "delta_bonus"
-        },
-        {
-            "name": "Marriott Bonvoy Bonus",
-            "url": "https://www.doctorofcredit.com/marriott-bonvoy-50000-bonus/",
-            "parser": "marriott_bonus"
-        },
-        {
-            "name": "Doctor of Credit (Travel)",
-            "url": "https://www.doctorofcredit.com/category/travel-2/",
-            "parser": "doc_travel"
-        }
-    ],
-    "survey": [
-        {
-            "name": "Swagbucks Signup Bonus",
-            "url": "https://www.doctorofcredit.com/swagbucks-10-bonus/",
-            "parser": "swagbucks_bonus"
-        },
-        {
-            "name": "Survey Junkie Bonus",
-            "url": "https://www.doctorofcredit.com/survey-junkie-5-bonus/",
-            "parser": "survey_junkie_bonus"
-        },
-        {
-            "name": "Doctor of Credit (Surveys/GPT)",
-            "url": "https://www.doctorofcredit.com/category/surveys-gpt/",
-            "parser": "doc_survey"
-        }
-    ],
-    "crypto": [
-        {
-            "name": "OKX Up to $10,000 Welcome Bonus",
-            "url": "https://www.doctorofcredit.com/okx-crypto-exchange-review-bonus/",
-            "parser": "okx_bonus"
-        },
-        {
-            "name": "Coinbase Up to $200 Crypto Bonus",
-            "url": "https://www.doctorofcredit.com/coinbase-review-bonus/",
-            "parser": "coinbase_bonus"
-        },
-        {
-            "name": "Bitget $5,000 Trial Fund + Rebates",
-            "url": "https://www.doctorofcredit.com/bitget-crypto-exchange-review-bonus/",
-            "parser": "bitget_bonus"
-        },
-        {
-            "name": "Kraken 3% Deposit Match",
-            "url": "https://www.doctorofcredit.com/kraken-3-cash-crypto-deposit-match-18-month-hold/",
-            "parser": "kraken_bonus"
-        },
-        {
-            "name": "MEXC Referral Ambassador Program",
-            "url": "https://www.mexc.com/en-TR/announcements/article/mexc-launches-the-referral-ambassador-program-17827791531306",
-            "parser": "mexc_bonus",
-            "dynamic": True
-        },
-        {
-            "name": "HTX New Funds Bonus Trial",
-            "url": "https://www.htx.com/support/55024606728745",
-            "parser": "htx_bonus",
-            "dynamic": True
-        },
-        {
-            "name": "Crypto.com VIP Referral Program",
-            "url": "https://crypto.com/sg/product-news/exchange-vip-referral-program",
-            "parser": "cryptocom_bonus",
-            "dynamic": True
-        },
-        {
-            "name": "Bybit $1,000,000 Boost Battle",
-            "url": "https://announcements.bybit.com/article/boost-battle-x-tmgp-2026-series-1-trade-daily-grab-your-share-of-the-1-000-000-usdt-prize-pool--blt353d08203eb770b9/",
-            "parser": "bybit_bonus",
-            "dynamic": True
-        }
-    ],
-    "real_estate": [
-        {
-            "name": "Zillow Referral Bonus",
-            "url": "https://www.zillow.com/referral/",
-            "parser": "zillow_bonus"
-        },
-        {
-            "name": "Redfin Referral Bonus",
-            "url": "https://www.redfin.com/referral/",
-            "parser": "redfin_bonus"
-        },
-        {
-            "name": "Realtor.com Referral Bonus",
-            "url": "https://www.realtor.com/referral/",
-            "parser": "realtor_bonus"
-        }
-    ]
-}
-
-# ======================== PARSERS MAP ========================
-PARSERS = {
+# ======================== MAP CUSTOM PARSERS ========================
+CUSTOM_PARSERS = {
     "doc_bank": parse_doc_bank,
     "chase": parse_chase,
     "bofa": parse_bofa,
@@ -1001,86 +851,56 @@ PARSERS = {
     "htx_bonus": parse_htx_bonus,
     "cryptocom_bonus": parse_cryptocom_bonus,
     "bybit_bonus": parse_bybit_bonus,
-    "mse_uk_switch": parse_mse_uk_switch,
-    "nerdwallet_bank": parse_nerdwallet_bank,
-    "coinbase": parse_coinbase,
-    "binance": parse_binance,
-    "crypto_com": parse_crypto_com,
-    "robinhood": parse_robinhood,
-    "webull": parse_webull,
-    "airbnb": parse_airbnb,
-    "uber": parse_uber,
-    "doordash": parse_doordash,
-    "rakuten": parse_rakuten,
-    "honey": parse_honey,
-    "delta": parse_delta,
-    "marriott": parse_marriott,
-    "swagbucks": parse_swagbucks,
-    "survey_junkie": parse_survey_junkie,
-    "citi_private": parse_citi_private,
     "robinhood_bonus": parse_robinhood_bonus,
     "webull_bonus": parse_webull_bonus,
+    "doc_investment": parse_doc_investment,
     "airbnb_bonus": parse_airbnb_bonus,
     "uber_bonus": parse_uber_bonus,
     "doordash_bonus": parse_doordash_bonus,
+    "doc_referral": parse_doc_referral,
     "rakuten_bonus": parse_rakuten_bonus,
     "honey_bonus": parse_honey_bonus,
+    "doc_retail": parse_doc_retail,
     "delta_bonus": parse_delta_bonus,
     "marriott_bonus": parse_marriott_bonus,
+    "doc_travel": parse_doc_travel,
     "swagbucks_bonus": parse_swagbucks_bonus,
     "survey_junkie_bonus": parse_survey_junkie_bonus,
-    "doc_investment": parse_doc_investment,
-    "doc_referral": parse_doc_referral,
-    "doc_retail": parse_doc_retail,
-    "doc_travel": parse_doc_travel,
     "doc_survey": parse_doc_survey,
     "zillow_bonus": parse_zillow_bonus,
     "redfin_bonus": parse_redfin_bonus,
     "realtor_bonus": parse_realtor_bonus,
 }
 
-# ======================== KNOWN BANKS SET (with proper User-Agent) ========================
+# ======================== KNOWN BANKS SET (unchanged) ========================
 def fetch_known_banks():
-    """
-    Fetch the Wikipedia list of banks and return a set of lowercased bank names.
-    Uses a common browser User-Agent to avoid 403.
-    """
     url = "https://en.wikipedia.org/wiki/List_of_banks_(alphabetical)"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
+    headers = {'User-Agent': USER_AGENT}
     try:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
     except Exception as e:
         print(f"⚠️ Could not fetch bank list: {e}. Falling back to empty set.")
         return set()
-
     soup = BeautifulSoup(response.text, 'html.parser')
     known_banks = set()
-    
-    # Find all sections with headings from A to Z
     for heading in soup.find_all(['h2', 'h3']):
-        # The actual list items are in <ul> following the heading
         ul = heading.find_next('ul')
         if not ul:
             continue
         for li in ul.find_all('li'):
-            # The bank name is usually the linked text
             a = li.find('a')
             if a and a.text.strip():
                 name = a.text.strip()
-                # Clean up: remove trailing commas, parentheticals
                 name = re.sub(r',.*$', '', name)
                 name = re.sub(r'\s*\([^)]*\)', '', name)
                 known_banks.add(name.lower())
-    
     print(f"✅ Loaded {len(known_banks)} known bank names from Wikipedia.")
     return known_banks
 
 KNOWN_BANKS = fetch_known_banks()
 
-# ======================== BANK SUFFIXES (to identify valid names) ========================
+# ======================== BANK SUFFIXES & STOPWORDS ========================
 BANK_SUFFIXES = {
     'bank', 'banks', 'credit union', 'financial', 'trust', 'savings', 'federal',
     'community', 'national', 'state', 'cooperative', 'building society', 'banco',
@@ -1088,7 +908,6 @@ BANK_SUFFIXES = {
     'association', 'fund', 'capital', 'partners', 'asset management', 'wealth'
 }
 
-# ======================== STOPWORD SET (for fallback cleanup) ========================
 COMMON_STOPWORDS_FIRST_WORD = {
     'can', 'just', 'there', 'this', 'has', 'was', 'two', 'No', 'monthly', 'fees', 'to', 'worry', 'about', 'recently', 'increased', 'from', 'direct', 'requires', 'deposit', 
     'bonus', 'offer', 'previously', 'also', 'and', 'the', 'but', 'not', 'so', 'if', 'such', 'as', 'Sometimes', 'it', 'includes', 'or', 'something', 'similar', 'instead',
@@ -1136,40 +955,31 @@ def transform_bonus(old_bonus):
         bank_or_platform = best_match.title()
     else:
         # 2. Clean the candidate: remove leading descriptive phrases
-        # Common phrases to strip (case‑insensitive)
         phrases_to_remove = [
             r'^(?:can|just|there|this|has|was|two|one|direct|requires|deposit|bonus|offer|previously|also|and|the|but|not|so|if)\s+',
             r'^(?:up to|up to the|fund up to|funding|fund|get|need to|require|required|with|by|for|from|in|into|of|on|to)\s+',
-            # The following line is commented because these words are part of bank names, but we may still want to remove them if they are isolated at the beginning
-            # r'^(?:bank|credit union|financial|trust|savings|federal|community|national|state)\s+',
         ]
         cleaned = candidate
         for pattern in phrases_to_remove:
             cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE).strip()
-        # Also remove trailing words like "bonus", "referral", etc.
         cleaned = re.sub(r'\s+(?:bonus|referral|offer|signup|account|checking|savings|business|personal)$', '', cleaned, flags=re.IGNORECASE).strip()
         
-        # Check if cleaned contains a bank‑like suffix
         contains_bank_suffix = any(suffix in cleaned.lower() for suffix in BANK_SUFFIXES)
-        # Also check if the cleaned string itself is a known bank (maybe partial)
         if not contains_bank_suffix:
-            # Try to see if any word in cleaned is a known bank (e.g., "Chase" alone)
             words = cleaned.split()
             for word in words:
                 if word.lower() in KNOWN_BANKS:
                     bank_or_platform = word
                     break
             else:
-                # No bank indicator → reject
                 return None
         else:
             bank_or_platform = cleaned
 
-    # Now we have a cleaned bank_or_platform; ensure it's not too short
     if len(bank_or_platform) < 3:
         return None
 
-    # Derive capitalRequired, days, difficulty, etc. (same as before)
+    # Derive capitalRequired, days, difficulty
     capital = old_bonus.get('min_deposit') or old_bonus.get('direct_deposit') or 0
     if isinstance(capital, bool):
         capital = 0
@@ -1224,65 +1034,147 @@ def transform_bonus(old_bonus):
         elif category == 'investment':
             new_bonus["investmentType"] = old_bonus.get('account_type', 'stocks')
 
-    # Add geographic restrictions
     if old_bonus.get('geographic_restrictions'):
         new_bonus["restrictions"] = "Available in: " + ", ".join(old_bonus['geographic_restrictions'])
         new_bonus["tags"].extend(old_bonus['geographic_restrictions'])
 
-    # Add notes as tags
     if old_bonus.get('notes'):
         new_bonus["tags"].extend(old_bonus['notes'])
 
     return new_bonus
 
-# ======================== SCRAPE ALL BONUSES ========================
-def scrape_all_bonuses():
-    crawl_start_time = int(datetime.utcnow().timestamp() * 1000)
-    raw_bonuses = []
-    total_sources = 0
-    successful = 0
-    failed = 0
+# ======================== DISCOVERY CRAWLER ========================
+async def discover_incentive_pages(
+    seed_url: str,
+    max_pages: int = MAX_PAGES_PER_DOMAIN,
+    same_domain_only: bool = True,
+    delay: float = DELAY
+) -> List[str]:
+    """
+    Crawl from seed_url, collect pages that contain incentive keywords.
+    Returns a list of candidate URLs.
+    """
+    visited: Set[str] = set()
+    candidates: List[str] = []
+    queue: List[str] = [seed_url]
+    domain = urlparse(seed_url).netloc
 
-    for category, sources in SOURCES.items():
-        for source in sources:
-            total_sources += 1
-            print(f"Scraping {source['name']} ({category})...")
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
 
-            if source.get('dynamic', False):
-                html = fetch_dynamic(source['url'])
-            else:
-                html = fetch_url(source['url'])
-
-            if html is None:
-                failed += 1
+        while queue and len(visited) < max_pages:
+            url = queue.pop(0)
+            if url in visited:
                 continue
 
-            parser = PARSERS.get(source['parser'])
-            if not parser:
-                print(f"  No parser for {source['parser']}")
-                failed += 1
+            if not await can_fetch(url):
+                print(f"🛑 Skipping {url} (disallowed by robots.txt)")
+                visited.add(url)
                 continue
+
+            visited.add(url)
 
             try:
-                bonuses = parser(html, source['url'])
-                if bonuses:
-                    bonuses = [b for b in bonuses if b is not None]
-                raw_bonuses.extend(bonuses)
-                successful += 1
-                print(f"  Found {len(bonuses)} bonuses")
+                await page.goto(url, timeout=30000, wait_until="domcontentloaded")
+                text = await page.inner_text("body")
+                if any(kw in text.lower() for kw in INCENTIVE_KEYWORDS):
+                    candidates.append(url)
+
+                links = await page.eval_on_selector_all('a[href]', 'els => els.map(e => e.href)')
+                for link in links:
+                    full_url = urljoin(url, link)
+                    parsed = urlparse(full_url)
+                    if same_domain_only and parsed.netloc != domain:
+                        continue
+                    if full_url not in visited and full_url not in queue:
+                        queue.append(full_url)
+
+                await asyncio.sleep(delay + random.uniform(0, 1))
+
             except Exception as e:
-                print(f"  Error parsing {source['name']}: {e}")
-                failed += 1
+                print(f"Error crawling {url}: {e}")
 
-            time.sleep(DELAY)
+        await browser.close()
+    return candidates
 
-    print(f"\nScraping completed: {successful}/{total_sources} sources succeeded, {failed} failed.")
-    print(f"Total raw bonuses collected: {len(raw_bonuses)}")
+# ======================== PROCESS A SINGLE URL ========================
+async def process_url(url: str, known_parsers: Dict) -> List[Dict]:
+    """
+    Fetch a URL and extract bonuses using:
+    - a custom parser if the URL matches a known source,
+    - otherwise a heuristic fallback.
+    Returns a list of raw bonus dicts (before transformation).
+    """
+    if not await can_fetch(url):
+        print(f"🛑 Skipping {url} (disallowed by robots.txt)")
+        return []
 
+    html = await fetch_url_async(url)
+    if html is None:
+        html = await fetch_dynamic_async(url)
+        if html is None:
+            return []
+
+    # Check if we have a custom parser for this URL (exact match)
+    source_config = None
+    for src in load_sources():
+        if src.get('url') == url:
+            source_config = src
+            break
+
+    if source_config and source_config.get('parser') in known_parsers:
+        parser = known_parsers[source_config['parser']]
+        try:
+            bonuses = parser(html, url)
+            return bonuses if bonuses else []
+        except Exception as e:
+            print(f"Custom parser error for {url}: {e}")
+            return []
+    else:
+        bonus = heuristic_extract_bonus(html, url)
+        return [bonus] if bonus else []
+
+# ======================== MAIN ORCHESTRATOR ========================
+async def run_autonomous_crawler():
+    print("🕷️ Starting autonomous global bonus crawler...")
+    crawl_start_time = int(datetime.utcnow().timestamp() * 1000)
+
+    # Step 1: Discover candidate URLs from seed domains
+    discovered_urls = set()
+    for seed in SEED_URLS:
+        print(f"🌱 Crawling seed: {seed}")
+        candidates = await discover_incentive_pages(seed, max_pages=50)
+        discovered_urls.update(candidates)
+        print(f"  Found {len(candidates)} candidate pages")
+
+    print(f"✅ Total discovered unique URLs: {len(discovered_urls)}")
+
+    # Step 2: Load known custom parsers
+    known_parsers = CUSTOM_PARSERS  # defined above
+
+    # Step 3: Process each discovered URL
+    raw_bonuses = []
+    for url in discovered_urls:
+        print(f"🔍 Processing {url}")
+        bonuses = await process_url(url, known_parsers)
+        raw_bonuses.extend(bonuses)
+        await asyncio.sleep(DELAY + random.uniform(0, 1))
+
+    # Step 4: Add known sources from sources.json (they may not be discovered)
+    for src in load_sources():
+        url = src.get('url')
+        if url and url not in discovered_urls:
+            print(f"📦 Processing known source: {url}")
+            bonuses = await process_url(url, known_parsers)
+            raw_bonuses.extend(bonuses)
+            await asyncio.sleep(DELAY + random.uniform(0, 1))
+
+    # Step 5: Deduplicate and transform
     seen = set()
     unique_raw = []
     for b in raw_bonuses:
-        key = (b.get('bank') or b.get('platform'), b.get('bonus_amount'), b.get('raw_text', '')[:50])
+        key = (b.get('bank') or 'Unknown', b.get('bonus_amount'), b.get('raw_text', '')[:50])
         if key not in seen:
             seen.add(key)
             unique_raw.append(b)
@@ -1291,17 +1183,25 @@ def scrape_all_bonuses():
 
     transformed = [transform_bonus(b) for b in unique_raw]
     transformed = [b for b in transformed if b is not None]
-    
-    print(f"After validation: {len(transformed)} valid bonuses (filtered out {len(unique_raw) - len(transformed)} invalid)")
-    
-    return transformed, crawl_start_time
+
+    print(f"After validation: {len(transformed)} valid bonuses")
+
+    # Step 6: Format output
+    output = format_output(transformed, crawl_start_time)  # defined below
+
+    os.makedirs("output", exist_ok=True)
+    with open("output/bonuses.json", "w") as f:
+        json.dump(output, f, indent=2)
+
+    print(f"\n✅ Done. Saved {len(transformed)} bonuses to output/bonuses.json")
+    print(f"📦 Output: output/bonuses.json")
 
 def format_output(bonuses, crawl_start_time=None):
     categories = list(set(b['category'] for b in bonuses))
     total_value = sum(b['bonusAmount'] for b in bonuses)
     current_time = int(datetime.utcnow().timestamp() * 1000)
     crawl_start = crawl_start_time or current_time
-    
+
     return {
         "bonuses": bonuses,
         "lastUpdated": datetime.utcnow().isoformat() + "Z",
@@ -1324,17 +1224,5 @@ def format_output(bonuses, crawl_start_time=None):
         }
     }
 
-def main():
-    print("🕷️ Starting Bato Crawler...")
-    bonuses, crawl_start_time = scrape_all_bonuses()
-    output = format_output(bonuses, crawl_start_time)
-    import os
-    os.makedirs("output", exist_ok=True)
-    with open("output/bonuses.json", "w") as f:
-        json.dump(output, f, indent=2)
-    print(f"\n✅ Done. Saved {len(bonuses)} bonuses to output/bonuses.json")
-    print(f"💰 Total value: ${output['meta']['totalValue']:,}")
-    print(f"📦 Output: output/bonuses.json")
-
 if __name__ == "__main__":
-    main()
+    asyncio.run(run_autonomous_crawler())
