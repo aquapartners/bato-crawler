@@ -1007,394 +1007,125 @@
       border-radius: 2px;
     }
 
+    /* ===== REQUIREMENTS LIST - BASIC STYLING ===== */
+    
     .requirements-list {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 0.625rem;
+      gap: 0.1rem;
       padding: 0;
       margin: 0;
     }
 
-
     .requirement-item {
       display: flex;
       align-items: start;
-      gap: 0.875rem;
-      font-size: 0.9375rem;
-      color: var(--foreground);
-      line-height: 1.6;
-      font-weight: var(--font-weight-normal);
-      padding: 1.125rem 1.25rem;
-      background: transparent;
-      border-radius: 0;
-      border: none;
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-      user-select: none;
+      gap: 0.1rem;
+      padding: 0.875rem 1rem;
     }
 
-    /* Mobile responsive adjustments for requirements */
-    @media (max-width: 640px) {
-      .requirement-item {
-        padding: 0.875rem 1rem;
-        gap: 0.75rem;
-        font-size: 0.875rem;
-      }
-
-      .requirement-icon {
-        width: 20px;
-        height: 20px;
-        font-size: 1rem;
-      }
-
-      .requirement-text {
-        font-size: 0.875rem;
-        line-height: 1.55;
-      }
-    }
-
-    .requirement-item::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 3px;
-      height: 100%;
-      background: var(--gradient-primary);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    /* Shimmer effect on hover for extra visual appeal */
-    .requirement-item::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.3) 50%,
-        transparent 100%
-      );
-      transition: left 0.5s ease;
-      pointer-events: none;
-    }
-
-    .requirement-item:hover::after {
-      left: 100%;
-    }
-
-    .requirement-item:hover {
-      transform: translateX(4px);
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
-      background: linear-gradient(135deg, 
-        rgba(124, 58, 237, 0.08) 0%, 
-        rgba(37, 99, 235, 0.08) 100%);
-      border-left-color: var(--bato-purple-start);
-    }
-
-    .requirement-item:active {
-      transform: translateX(2px) scale(0.99);
-      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
-    }
-
-    .requirement-item:hover::before {
-      opacity: 1;
-    }
-
-    .requirement-item:hover .requirement-icon {
-      transform: scale(1.2) rotate(10deg);
-    }
-
-    .requirement-item:active .requirement-icon {
-      transform: scale(1.1) rotate(5deg);
-    }
-
-    .requirement-icon {
-      color: var(--bato-green);
-      font-size: 1.25rem;
-      margin-top: 0.125rem;
-      flex-shrink: 0;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, 
-        rgba(16, 185, 129, 0.15) 0%, 
-        rgba(16, 185, 129, 0.08) 100%);
-      border-radius: 50%;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
-      font-weight: var(--font-weight-medium);
-      will-change: transform;
-    }
-
-    .requirement-item:hover .requirement-icon {
-      background: var(--bato-green);
-      color: white;
-      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-      animation: iconPulse 0.6s ease-in-out;
-    }
-
-    @keyframes iconPulse {
-      0%, 100% { transform: scale(1.2) rotate(10deg); }
-      50% { transform: scale(1.3) rotate(10deg); }
-    }
-
-    /* Requirement text styling - optimized for impatient, non-technical users */
-    .requirement-text {
-      font-size: 0.9375rem;
-      line-height: 1.65;
-      color: var(--foreground);
-      font-weight: var(--font-weight-normal);
-      flex: 1;
-      display: block;
-      transition: all 0.3s ease;
-      word-break: break-word;
-      hyphens: auto;
-      max-width: 100%;
-    }
-
-    .requirement-item:hover .requirement-text {
-      color: var(--bato-purple-start);
-      font-weight: var(--font-weight-medium);
-    }
-
-    /* Make important numbers/amounts stand out for scanability */
-    .requirement-text strong,
-    .requirement-text b {
-      font-weight: var(--font-weight-medium);
-      color: var(--bato-purple-start);
-      background: linear-gradient(135deg, 
-        rgba(124, 58, 237, 0.12) 0%, 
-        rgba(37, 99, 235, 0.08) 100%);
-      padding: 0.125rem 0.375rem;
-      border-radius: 5px;
-      white-space: nowrap;
-      transition: all 0.2s ease;
-    }
-
-    .requirement-item:hover .requirement-text strong,
-    .requirement-item:hover .requirement-text b {
-      background: var(--gradient-primary);
-      color: white;
-      box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
-    }
-
-    /* Highlight dollar amounts and percentages for easy scanning */
-    .requirement-text:has-text("$"),
-    .requirement-text:has-text("%") {
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Visual indicator for long text */
-    .requirement-text::selection {
-      background: rgba(124, 58, 237, 0.2);
-      color: var(--bato-purple-start);
-    }
-
-    /* Alternative styles for different requirement priorities */
-    .requirement-item.priority-high {
-      border-left-color: var(--bato-purple-start);
-      background: linear-gradient(135deg, 
-        rgba(124, 58, 237, 0.06) 0%, 
-        rgba(37, 99, 235, 0.06) 100%);
-    }
-
-    .requirement-item.priority-high .requirement-icon {
-      background: linear-gradient(135deg, 
-        rgba(124, 58, 237, 0.15) 0%, 
-        rgba(37, 99, 235, 0.15) 100%);
-      color: var(--bato-purple-start);
-    }
-
-    .requirement-item.priority-high:hover .requirement-icon {
-      background: var(--gradient-primary);
-      color: white;
-    }
-
-    .requirement-item.priority-medium {
-      border-left-color: var(--bato-gold);
-      background: linear-gradient(135deg, 
-        rgba(255, 215, 0, 0.04) 0%, 
-        rgba(255, 215, 0, 0.02) 100%);
-    }
-
-    .requirement-item.priority-medium .requirement-icon {
-      background: linear-gradient(135deg, 
-        rgba(255, 215, 0, 0.15) 0%, 
-        rgba(255, 215, 0, 0.08) 100%);
-      color: var(--bato-gold);
-      filter: brightness(0.8);
-    }
-
-    .requirement-item.priority-medium:hover .requirement-icon {
-      background: var(--bato-gold);
-      color: white;
-      filter: brightness(1);
-    }
-
-    /* Numbered requirements styling */
-    .requirement-item .req-number {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 24px;
-      height: 24px;
-      background: var(--gradient-primary);
-      color: white;
-      font-size: 0.75rem;
-      font-weight: var(--font-weight-medium);
-      border-radius: 50%;
-      margin-right: 0.5rem;
-      flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3);
-    }
-
-    /* Checked/completed requirements */
-    .requirement-item.completed {
-      opacity: 0.7;
-      background: linear-gradient(135deg, 
-        rgba(16, 185, 129, 0.06) 0%, 
-        rgba(16, 185, 129, 0.03) 100%);
-      border-left-color: var(--bato-green);
-    }
-
-    .requirement-item.completed .requirement-icon {
-      background: var(--bato-green);
-      color: white;
-    }
-
-    /* Empty state for requirements */
-    .requirements-list:empty::after,
-    .requirements-empty {
-      content: '📝 No specific requirements listed';
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1.5rem;
-      color: var(--muted-foreground);
-      font-size: 0.9375rem;
-      font-style: italic;
-      background: linear-gradient(135deg, 
-        rgba(124, 58, 237, 0.03) 0%, 
-        rgba(37, 99, 235, 0.03) 100%);
-      border-radius: var(--radius-lg);
-      border: 2px dashed rgba(124, 58, 237, 0.2);
-      gap: 0.5rem;
-    }
-
-    /* Mobile responsive adjustments */
-    @media (max-width: 640px) {
-      .requirement-item {
-        padding: 0.875rem 1rem;
-        font-size: 0.875rem;
-      }
-
-      .requirement-icon {
-        font-size: 1.125rem;
-        width: 20px;
-        height: 20px;
-      }
-    }
-
-    /* ===== ENHANCED REQUIREMENTS SYSTEM ===== */
-    
-    /* Icon wrapper with gradient background */
-    .requirement-icon-wrapper {
-      flex-shrink: 0;
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #7C3AED 0%, #2563EB 100%);
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
-      font-size: 1.5rem;
-      transition: all 0.3s ease;
-    }
-
-    .requirement-item:hover .requirement-icon-wrapper {
-      transform: scale(1.1) rotate(5deg);
-      box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
-    }
+    /* ===== BASIC ENHANCED REQUIREMENTS STYLING (with Markdown) ===== */
 
     /* Content wrapper */
     .requirement-content {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.1rem;
     }
 
-    /* Enhanced requirement text with flex layout */
+    /* Requirement text with Markdown support */
     .requirement-text {
-      font-size: 1rem;
+      font-size: 0.9375rem;
       font-weight: 500;
       color: var(--foreground);
       line-height: 1.5;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.1rem;
       flex-wrap: wrap;
     }
 
-    /* Highlighted numbers and dollar amounts */
-    .requirement-highlight {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.125rem 0.5rem;
-      background: linear-gradient(135deg, #7C3AED 0%, #2563EB 100%);
-      color: white;
-      border-radius: 6px;
+    /* Markdown element styling */
+    .requirement-text strong {
       font-weight: 700;
-      font-size: 0.95rem;
-      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+      color: #7C3AED;
     }
 
-    /* Difficulty badge */
+    .requirement-text em {
+      font-style: italic;
+      color: #64748b;
+    }
+
+    .requirement-text code {
+      background: #f3f4f6;
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      color: #DC2626;
+      border: 1px solid #e5e7eb;
+    }
+
+    .requirement-text mark {
+      background: #fef08a;
+      padding: 0.125rem 0.25rem;
+      border-radius: 3px;
+      color: #854d0e;
+    }
+
+    .requirement-text a {
+      color: #2563EB;
+      text-decoration: underline;
+    }
+
+    .requirement-text a:hover {
+      color: #7C3AED;
+    }
+
+    /* Highlighted numbers and dollar amounts - basic */
+    .requirement-highlight {
+      padding: 0.125rem 0.375rem;
+      background: #e0e7ff;
+      color: #4338ca;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    /* Difficulty badge - basic */
     .requirement-difficulty {
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
+      padding: 0.25rem 0.625rem;
+      border-radius: 12px;
       font-size: 0.75rem;
-      font-weight: 700;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
       margin-left: auto;
       white-space: nowrap;
     }
 
     .difficulty-easy {
-      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-      color: white;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+      background: #d1fae5;
+      color: #065f46;
     }
 
     .difficulty-medium {
-      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-      color: white;
-      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+      background: #fed7aa;
+      color: #92400e;
     }
 
     .difficulty-hard {
-      background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
-      color: white;
-      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+      background: #fecaca;
+      color: #991b1b;
     }
 
-    /* Helper text / subtext */
+    /* Helper text / subtext - basic */
     .requirement-subtext {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       color: #64748b;
       line-height: 1.4;
       display: flex;
@@ -1403,75 +1134,35 @@
       flex-wrap: wrap;
     }
 
-    .requirement-subtext-icon {
-      font-size: 1rem;
-      flex-shrink: 0;
-    }
-
-    /* Time estimate badge */
+    /* Time estimate badge - basic */
     .requirement-time {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.625rem;
-      background: rgba(124, 58, 237, 0.08);
-      border-radius: 6px;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      color: #7C3AED;
+      gap: 0.25rem;
+      padding: 0.2rem 0.5rem;
+      background: #f3f4f6;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #475569;
       white-space: nowrap;
+      border: 1px solid #e5e7eb;
     }
 
-    /* Type-specific border colors */
-    .requirement-item.type-deposit {
-      border-left-color: #10B981;
-    }
-
-    .requirement-item.type-transaction {
-      border-left-color: #3B82F6;
-    }
-
-    .requirement-item.type-time {
-      border-left-color: #F59E0B;
-    }
-
-    .requirement-item.type-maintain {
-      border-left-color: #8B5CF6;
-    }
-
-    .requirement-item.type-direct-deposit {
-      border-left-color: #2A9D8F;
-    }
-
-    .requirement-item.type-general {
-      border-left-color: #6B7280;
-    }
-
-    /* Mobile responsive for enhanced elements */
+    /* Mobile responsive */
     @media (max-width: 640px) {
-      .requirement-icon-wrapper {
-        width: 38px;
-        height: 38px;
-        font-size: 1.25rem;
-      }
-      
       .requirement-text {
-        font-size: 0.9375rem;
+        font-size: 0.875rem;
       }
       
       .requirement-difficulty {
         font-size: 0.6875rem;
-        padding: 0.2rem 0.6rem;
+        padding: 0.2rem 0.5rem;
       }
 
       .requirement-highlight {
-        font-size: 0.875rem;
-        padding: 0.1rem 0.4rem;
-      }
-
-      .requirement-time {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.5rem;
+        font-size: 0.8125rem;
+        padding: 0.1rem 0.3rem;
       }
     }
 
@@ -3217,8 +2908,27 @@
         }
       }
 
-      // ===== ENHANCED REQUIREMENTS PARSER =====
+      // ===== ENHANCED REQUIREMENTS PARSER (with Markdown support) =====
       
+      /**
+       * Markdown to HTML converter for requirement text
+       */
+      function parseMarkdown(text) {
+        return text
+          // Bold: **text** or __text__
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/__(.+?)__/g, '<strong>$1</strong>')
+          // Italic: *text* or _text_
+          .replace(/\*(.+?)\*/g, '<em>$1</em>')
+          .replace(/_(.+?)_/g, '<em>$1</em>')
+          // Code: `text`
+          .replace(/`(.+?)`/g, '<code>$1</code>')
+          // Highlight with ==text==
+          .replace(/==(.+?)==/g, '<mark>$1</mark>')
+          // Links: [text](url)
+          .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>');
+      }
+
       /**
        * Parse and format requirements with icons, difficulty, and visual enhancements
        */
@@ -3355,13 +3065,15 @@
       }
 
       /**
-       * Highlight numbers and dollar amounts in text
+       * Highlight numbers and dollar amounts in text, then apply Markdown
        */
       function highlightImportantText(text) {
-        return text
-          // Highlight dollar amounts
+        // First apply Markdown formatting
+        let formatted = parseMarkdown(text);
+        
+        // Then highlight dollar amounts and numbers
+        return formatted
           .replace(/\$[\d,]+(\.\d{2})?/g, '<span class="requirement-highlight">$&</span>')
-          // Highlight standalone numbers (for transaction counts)
           .replace(/\b(\d+)\s*(purchase|transaction|debit|month|day|week)/gi, 
             '<span class="requirement-highlight">$1</span> $2');
       }
@@ -3374,10 +3086,6 @@
         
         return `
           <li class="requirement-item type-${analysis.type}">
-            <div class="requirement-icon-wrapper">
-              ${analysis.icon}
-            </div>
-            
             <div class="requirement-content">
               <div class="requirement-text">
                 ${highlightedText}
@@ -3390,7 +3098,6 @@
               
               ${analysis.subtext ? `
                 <div class="requirement-subtext">
-                  <span class="requirement-subtext-icon">💡</span>
                   ${analysis.subtext}
                   ${analysis.timeEstimate ? `
                     <span class="requirement-time">
